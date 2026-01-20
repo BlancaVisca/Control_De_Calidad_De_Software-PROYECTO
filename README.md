@@ -1,4 +1,4 @@
-# RENOVABLE
+# REUNOVABLE
 
 REUNOVABLE es un juego educativo de cartas digitales enfocado en la separación de residuos como eje principal del aprendizaje ambiental. El objetivo es enseñar de forma interactiva la correcta clasificación de desechos mediante una dinámica estratégica por turnos entre el jugador y un oponente controlado por el sistema.
 
