@@ -20,4 +20,5 @@ A nivel de software, el proyecto integra lógica de juego por turnos, validació
 - Blanca Flor Visca Cocotzin
 - Karla Irais De Florencio Romero 
 - Ana Karen Garcia Flores  
-- Obed Espinosa Baldivia  
+- Obed Espinosa Baldivia
+- Tiago Gómez Cordero
