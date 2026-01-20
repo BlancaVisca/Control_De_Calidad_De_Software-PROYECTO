@@ -17,6 +17,7 @@ A nivel de software, el proyecto integra lógica de juego por turnos, validació
 
 ## Equipo de Diseño de Software
 
-- Blanca Flor Visca Cocotzin  
+- Blanca Flor Visca Cocotzin
+- Karla Irais De Florencio Romero 
 - Ana Karen Garcia Flores  
 - Obed Espinosa Baldivia  
