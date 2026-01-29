@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduGame - Aprende Jugando</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Icono Superior -->
+        <div class="recycling-icon">
+            <svg viewBox="0 0 24 24" fill="white">
+                <path d="M12 2L6 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-6-4zm0 14.5L7 14h10l-5 2.5z"/>
+            </svg>
+        </div>
+
+        <!-- Título Principal -->
+        <h1 class="main-title">EduUNO</h1>
+
+        <!-- Subtítulo -->
+        <p class="subtitle">Aprende jugando</p>
+
+        <!-- Selector de Temas con Menú Desplegable -->
+        <div class="theme-selector">
+            <h2 class="theme-title">Selecciona un tema para jugar:</h2>
+            <div class="dropdown-container">
+                <select id="themeSelect" class="theme-dropdown">
+                    <option value="" disabled selected>Elige un tema...</option>
+                    <option value="recycling">Separación de reciduos</option>
+                    <option value="math">Matemáticas</option>
+                </select>
+              
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="action-buttons">
+            <button class="btn-primary" id="startBtn">Iniciar juego</button>
+            <button class="btn-secondary" id="flashcardsBtn">Ver flashcards</button>
+        </div>
+
+        <!-- Pie de página -->
+        <footer class="footer">
+            <div class="footer-icon">
+                <svg viewBox="0 0 24 24" fill="#27ae60">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+            <p class="footer-text">¡UNO! Aprende, juega y gana.</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

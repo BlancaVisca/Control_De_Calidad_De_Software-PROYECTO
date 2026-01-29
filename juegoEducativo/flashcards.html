@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards - EduGame</title>
+    <link rel="stylesheet" href="css/flashcards.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Cabecera -->
+        <header class="header">
+            <div class="back-btn" onclick="goBack()">
+                <svg viewBox="0 0 24 24" fill="#e74c3c">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+            </div>
+            <div class="book-icon">
+                <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+                </svg>
+            </div>
+            <h1 class="header-title">Aprende sobre Separación de Residuos</h1>
+            <div class="progress-info">
+                <span class="progress-text">Tarjeta <span id="currentCard">1</span> de <span id="totalCards">4</span></span>
+                <p class="instruction">Haz clic en la tarjeta para voltearla</p>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <!-- Tarjeta Flashcard -->
+            <div class="flashcard-container" id="flashcardContainer">
+                <div class="flashcard" id="flashcard">
+                    <!-- Cara frontal -->
+                    <div class="flashcard-front">
+                        <div class="recycling-icon-large">
+                            <svg viewBox="0 0 24 24" fill="#cb1501">
+                                <path d="M12 2L6 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-6-4zm0 14.5L7 14h10l-5 2.5z"/>
+                            </svg>
+                        </div>
+                        <h2 class="card-title" id="cardTitle">Orgánico</h2>
+                        <p class="card-definition" id="cardDefinition">
+                            Son residuos biodegradables que provienen de plantas y animales. Incluyen restos de comida, cáscaras de frutas y verduras, hojas secas y otros materiales naturales que se descomponen fácilmente.
+                        </p>
+                        <div class="curiosity-box">
+                            <h3 class="curiosity-title">¿Sabías que...?</h3>
+                            <p class="curiosity-text" id="curiosityText">
+                                El 40% de los residuos que generamos diariamente son orgánicos y pueden convertirse en compost, un abono natural excelente para las plantas.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Cara posterior (respuesta/extra) -->
+                    <div class="flashcard-back">
+                        <h2 class="card-title-back">¡No olvides que...!</h2>
+                        <div class="back-content">
+                          
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Controles de Navegación -->
+        <div class="navigation-controls">
+            <button class="nav-btn prev-btn" id="prevBtn" disabled>
+                <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+                Anterior
+            </button>
+            
+            <div class="pagination" id="pagination">
+                <span class="dot active" data-index="0"></span>
+                <span class="dot" data-index="1"></span>
+                <span class="dot" data-index="2"></span>
+                <span class="dot" data-index="3"></span>
+            </div>
+            
+            <button class="nav-btn next-btn" id="nextBtn">
+                Siguiente
+                <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/flashcards.js"></script>
+</body>
+</html>
