@@ -1,6 +1,8 @@
 import "../css/styles.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import inicioImg from "../assets/inicio.png";
+
 
 export default function Home() {
   const [selectedTheme, setSelectedTheme] = useState("");
@@ -18,7 +20,14 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div className="recycling-icon">♻️</div>
+
+      <img 
+        src={inicioImg}
+        alt="Reciclaje" 
+        className="logo"
+      />
+
+
 
       <h1 className="main-title">EduUNO</h1>
       <p className="subtitle">Aprende jugando</p>

@@ -55,6 +55,13 @@ body {
     margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
 }
+h1.main-title {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #ff2a00;
+  text-shadow: 0 0 30px rgba(255, 124, 124, 0.8);
+}
+
 
 /* Subtítulo */
 .subtitle {
@@ -63,6 +70,14 @@ body {
     font-weight: 300;
     margin-bottom: 35px;
 }
+
+/* Carta inicio */
+.logo {
+  width: 500px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
 
 /* Selector de Temas con Dropdown */
 .theme-title {

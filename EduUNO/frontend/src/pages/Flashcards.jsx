@@ -1,7 +1,9 @@
 import "../css/flashcards.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { flashcardsData } from "../data/flashcardsData";
 import { useNavigate } from "react-router-dom";
+
+
 
 export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -24,6 +26,13 @@ export default function Flashcards() {
     }
   };
 
+  useEffect(() => {
+  if (currentIndex === 0) {
+    setTimeout(() => setFlipped(true), 600);
+    setTimeout(() => setFlipped(false), 1800);
+  }
+}, [currentIndex]);
+ 
   return (
     <div className="container">
       <header className="header">
@@ -38,6 +47,11 @@ export default function Flashcards() {
         <span className="progress-text">
           Tarjeta {currentIndex + 1} de {flashcardsData.length}
         </span>
+
+        <span className="instruction">
+          (Da click sobre la tarjeta)
+        </span>
+
       </header>
 
       <main className="main-content">
@@ -73,6 +87,16 @@ export default function Flashcards() {
           </div>
         </div>
       </main>
+      
+      <div className="pagination">
+        {flashcardsData.map((_, index) => (
+          <span
+            key={index}
+            className={`dot ${index === currentIndex ? "active" : ""}`}
+          />
+        ))}
+      </div>
+
 
       <div className="navigation-controls">
         <button onClick={prevCard} disabled={currentIndex === 0}>
