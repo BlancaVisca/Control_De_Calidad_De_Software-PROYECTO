@@ -11,10 +11,10 @@ export default function Flashcards() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* ===== PASO 1: RECIBIR THEME ===== */
+  /* ===== RECIBIR THEME ===== */
   const theme = location.state?.theme || "recycling";
 
-  /* ===== PASO 2: SELECCIONAR DATA ===== */
+  /* ===== SELECCIONAR DATA ===== */
   const data =
     theme === "math"
       ? flashcardsDataMath
@@ -22,6 +22,7 @@ export default function Flashcards() {
 
   const card = data[currentIndex];
 
+  /* ===== NAVEGACION ===== */
   const nextCard = () => {
     if (currentIndex < data.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -36,6 +37,12 @@ export default function Flashcards() {
     }
   };
 
+  /* ===== IR AL QUIZ ===== */
+  const goQuiz = () => {
+    navigate("/quiz", { state: { theme } });
+  };
+
+  /* ===== ANIMACION INICIAL ===== */
   useEffect(() => {
     if (currentIndex === 0) {
       setTimeout(() => setFlipped(true), 600);
@@ -45,6 +52,7 @@ export default function Flashcards() {
 
   return (
     <div className={`container ${theme}`}>
+
       <header className="header">
 
         <h1 className="header-title">
@@ -97,6 +105,7 @@ export default function Flashcards() {
         </div>
       </main>
 
+      {/* PAGINACION */}
       <div className="pagination">
         {data.map((_, index) => (
           <span
@@ -106,7 +115,9 @@ export default function Flashcards() {
         ))}
       </div>
 
+      {/* CONTROLES */}
       <div className="navigation-controls">
+
         <button onClick={prevCard} disabled={currentIndex === 0}>
           &lt; Anterior
         </button>
@@ -118,10 +129,27 @@ export default function Flashcards() {
           Siguiente &gt;
         </button>
 
-        <button className="back-menu-btn" onClick={() => navigate("/menu")}>
+        <button
+          className="back-menu-btn"
+          onClick={() => navigate("/menu")}
+        >
           &larr; Volver al menú
         </button>
+
       </div>
+
+      {/* BOTON QUIZ SOLO EN LA ULTIMA TARJETA */}
+      {currentIndex === data.length - 1 && (
+        <div className="quiz-start-container">
+          <button
+            className="quiz-start-btn"
+            onClick={goQuiz}
+          >
+            Iniciar cuestionario →
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }

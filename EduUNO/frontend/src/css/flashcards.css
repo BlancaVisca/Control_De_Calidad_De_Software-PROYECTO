@@ -351,3 +351,35 @@ body {
 .container.math .back-menu-btn:hover {
   background: rgba(255, 77, 77, 0.25);
 }
+
+
+/* Boton de lo del quiz :( */
+
+
+
+.quiz-start-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.quiz-start-btn {
+  padding: 14px 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  background: #3b82f6;
+  color: white;
+  transition: 0.25s;
+}
+
+.quiz-start-btn:hover {
+  transform: scale(1.05);
+}
+
+/* THEME MATH */
+.container.math .quiz-start-btn {
+  background: #ff4d4d;
+}

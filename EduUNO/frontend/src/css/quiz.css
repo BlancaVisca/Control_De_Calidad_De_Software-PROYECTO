@@ -1,0 +1,203 @@
+.quiz-container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+
+  background:
+    radial-gradient(circle at 30% 40%, rgba(0, 200, 120, 0.18), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(0, 120, 255, 0.18), transparent 55%),
+    linear-gradient(160deg, #050b1f, #071530 60%, #050b1f);
+
+  color: white;
+}
+
+/* HEADER */
+
+.quiz-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.quiz-title {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.quiz-progress-text {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* MAIN */
+
+.quiz-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ========================= */
+/* RECICLAJE (VERDE DEFAULT) */
+/* ========================= */
+
+.quiz-card {
+  width: 100%;
+  max-width: 850px;
+  background: #0b1730;
+  border-radius: 30px;
+  padding: 40px;
+
+  border: 3px solid #00ff9c;
+  box-shadow: 0 0 60px rgba(0, 255, 156, 0.45);
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* QUESTION */
+
+.quiz-question {
+  font-size: 1.6rem;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* OPTIONS */
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quiz-option {
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.quiz-option:hover {
+  transform: scale(1.03);
+}
+
+.quiz-option.selected {
+  border-color: #00ff9c;
+  box-shadow: 0 0 15px rgba(0, 255, 156, 0.6);
+}
+
+/* CONTROLES */
+
+.quiz-card-controls {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* BUTTONS */
+
+.quiz-btn {
+  padding: 12px 26px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+}
+
+.quiz-btn.primary {
+  background: #00c853;
+  color: white;
+}
+
+.quiz-btn.secondary {
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+}
+
+.quiz-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* RESULT */
+
+.quiz-result-title {
+  font-size: 1.8rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.quiz-score {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1.2rem;
+}
+
+.quiz-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* PAGINATION */
+
+.quiz-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.quiz-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.4);
+  transition: 0.3s;
+}
+
+/* ACTIVO VERDE */
+.quiz-dot.active {
+  transform: scale(1.4);
+  background: #00ff9c;
+}
+
+/* RESPONDIDO VERDE */
+.quiz-dot.answered {
+  background: #00c853;
+}
+
+/* ================= */
+/* THEME MATEMATICAS */
+/* ================= */
+
+.quiz-container.math .quiz-card {
+  border: 3px solid #ff4d4d;
+  box-shadow: 0 0 60px rgba(255, 77, 77, 0.5);
+}
+
+.quiz-container.math .quiz-option.selected {
+  border-color: #ff4d4d;
+  box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+}
+
+.quiz-container.math .quiz-btn.primary {
+  background: #ff4d4d;
+}
+
+/* DOT ACTIVO ROJO */
+.quiz-container.math .quiz-dot.active {
+  background: #ff4d4d;
+}
+
+/* DOT RESPONDIDO ROJO */
+.quiz-container.math .quiz-dot.answered {
+  background: #ff4d4d;
+}

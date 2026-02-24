@@ -3,6 +3,7 @@ import Menu from "./pages/Menu";
 import Flashcards from "./pages/Flashcards";
 import GameR from "./pages/GameR";
 import Inicio from "./pages/Inicio";
+import Quiz from "./pages/Quiz";
 
 
 
@@ -16,6 +17,7 @@ function App() {
         <Route path="/menu" element={<Menu />} />
         <Route path="/flashcards" element={<Flashcards />} />
         <Route path="/gameR" element={<GameR />} />
+        <Route path="/quiz" element={<Quiz />} />
       </Routes>
     </BrowserRouter>
   );
