@@ -36,9 +36,7 @@ export default function Flashcards() {
   return (
     <div className="container">
       <header className="header">
-        <div className="back-btn" onClick={() => navigate("/")}>
-          ⬅
-        </div>
+     
 
         <h1 className="header-title">
           Aprende sobre Separación de Residuos
@@ -100,14 +98,18 @@ export default function Flashcards() {
 
       <div className="navigation-controls">
         <button onClick={prevCard} disabled={currentIndex === 0}>
-          Anterior
+          &lt; Anterior
         </button>
 
         <button
           onClick={nextCard}
           disabled={currentIndex === flashcardsData.length - 1}
         >
-          Siguiente
+          Siguiente &gt;
+        </button>
+
+        <button className="back-menu-btn" onClick={() => navigate("/menu")}>
+           &larr; Volver al menú
         </button>
       </div>
     </div>

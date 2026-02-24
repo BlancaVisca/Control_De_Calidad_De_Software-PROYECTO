@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* RESET */
+* {
+  box-sizing: border-box;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.inicio-container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  overflow: hidden;
+
+  /* Fondo con manchas de colores */
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 200, 0, 0.45), transparent 30%),
+    radial-gradient(circle at 70% 45%, rgba(0, 170, 255, 0.40), transparent 35%),
+    radial-gradient(circle at 50% 70%, rgba(255, 60, 60, 0.35), transparent 35%),
+linear-gradient(160deg, #050b1f, #071530 60%, #050b1f);}
+
+/* TITULO */
+.inicio-title {
+  font-family: "Archivo Black", sans-serif;
+  font-size: clamp(4rem, 10vw, 9rem);
+  font-weight: 800;
+  color: #e5e7eb;
+  margin: 0;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+/* SUBTITULO */
+.inicio-subtitle {
+  color: #d1d5db;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  margin-top: -10px;
+  text-align: center;
+}
+
+/* WRAPPER IMAGEN */
+.inicio-img-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* RESPLANDOR DETRÁS DE LAS CARTAS */
+.inicio-img-wrapper::before {
+  content: "";
+  position: absolute;
+
+  width: 65%;
+  height: 65%;
+
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  background:
+    radial-gradient(circle at center, rgba(255, 200, 0, 0.7) 0%, transparent 35%),
+    radial-gradient(circle at center, rgba(107, 183, 215, 0.6) 0%, transparent 40%),
+    radial-gradient(circle at center, rgba(255, 50, 50, 0.6) 0%, transparent 45%);
+
+  filter: blur(25px);
+  z-index: 0;
+}
+
+/* IMAGEN */
+.inicio-img {
+  position: relative;
+  z-index: 1;
+  width: clamp(250px, 40vw, 700px);
+  height: auto;
+  object-fit: contain;
+}
+
+/* BOTON */
+.inicio-btn {
+  padding: 17px 80px;
+  font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+  font-weight: bold;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  color: white;
+
+  background: linear-gradient(135deg, #1448b0, #1448b0);
+  box-shadow: 0 12px 30px rgba(40, 145, 202, 0.467);
+
+  transition: 0.25s ease;
+}
+
+.inicio-btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 18px 40px rgba(0, 102, 255, 0.65);
+}

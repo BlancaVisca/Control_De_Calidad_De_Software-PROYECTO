@@ -1,23 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
+import Menu from "./pages/Menu";
 import Flashcards from "./pages/Flashcards";
-import Game from "./pages/Game";
-import Ejemplo from "./pages/Ejemplo";
+import GameR from "./pages/GameR";
+import Inicio from "./pages/Inicio";
 
 
 
 
-<Route path="/game" element={<Game />} />
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Inicio />} />
+        <Route path="/menu" element={<Menu />} />
         <Route path="/flashcards" element={<Flashcards />} />
-        <Route path="/game" element={<Game />} />
-        <Route path="/ejemplo" element={<Ejemplo />} />
-
+        <Route path="/gameR" element={<GameR />} />
       </Routes>
     </BrowserRouter>
   );
