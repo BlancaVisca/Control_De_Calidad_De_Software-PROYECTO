@@ -22,9 +22,12 @@ export default function Menu() {
   };
 
   const goFlashcards = () => {
-    if (!validate()) return;
-    navigate("/flashcards");
-  };
+  if (!validate()) return;
+
+  navigate("/flashcards", {
+    state: { theme: selectedTheme }
+  });
+};
 
   return (
     <div className="home-bg">

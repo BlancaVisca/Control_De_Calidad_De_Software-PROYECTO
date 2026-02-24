@@ -308,3 +308,46 @@ body {
 .flashcard.metal .curiosity-box h3 {
   color: #ffd84c;
 }
+
+
+
+
+/* ======================= */
+/* ===== THEME MATH ======= */
+/* ======================= */
+
+.container.math {
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 77, 77, 0.18), transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(255, 77, 77, 0.18), transparent 55%),
+    linear-gradient(160deg, #050b1f, #071530 60%, #050b1f);
+}
+
+/* Bordes rojos */
+.container.math .flashcard {
+  border: 3px solid #ff4d4d !important;
+  box-shadow: 0 0 60px rgba(255, 77, 77, 0.6) !important;
+}
+
+/* Texto rojo */
+.container.math .progress-text {
+  color: #ff4d4d;
+}
+
+.container.math .curiosity-box h3 {
+  color: #ff4d4d;
+}
+
+/* Dots */
+.container.math .dot.active {
+  background: #ff4d4d;
+}
+
+/* Hover botones */
+.container.math .navigation-controls button:hover {
+  background: rgba(255, 77, 77, 0.25);
+}
+
+.container.math .back-menu-btn:hover {
+  background: rgba(255, 77, 77, 0.25);
+}

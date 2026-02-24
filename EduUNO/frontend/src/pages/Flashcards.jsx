@@ -1,19 +1,29 @@
 import "../css/flashcards.css";
 import { useState, useEffect } from "react";
 import { flashcardsData } from "../data/flashcardsData";
-import { useNavigate } from "react-router-dom";
-
-
+import { flashcardsDataMath } from "../data/flashcardsDataMath";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const navigate = useNavigate();
 
-  const card = flashcardsData[currentIndex];
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /* ===== PASO 1: RECIBIR THEME ===== */
+  const theme = location.state?.theme || "recycling";
+
+  /* ===== PASO 2: SELECCIONAR DATA ===== */
+  const data =
+    theme === "math"
+      ? flashcardsDataMath
+      : flashcardsData;
+
+  const card = data[currentIndex];
 
   const nextCard = () => {
-    if (currentIndex < flashcardsData.length - 1) {
+    if (currentIndex < data.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setFlipped(false);
     }
@@ -27,23 +37,24 @@ export default function Flashcards() {
   };
 
   useEffect(() => {
-  if (currentIndex === 0) {
-    setTimeout(() => setFlipped(true), 600);
-    setTimeout(() => setFlipped(false), 1800);
-  }
-}, [currentIndex]);
- 
+    if (currentIndex === 0) {
+      setTimeout(() => setFlipped(true), 600);
+      setTimeout(() => setFlipped(false), 1800);
+    }
+  }, [currentIndex]);
+
   return (
-    <div className="container">
+    <div className={`container ${theme}`}>
       <header className="header">
-     
 
         <h1 className="header-title">
-          Aprende sobre Separación de Residuos
+          {theme === "math"
+            ? "Aprende Matemáticas"
+            : "Aprende sobre Separación de Residuos"}
         </h1>
 
         <span className="progress-text">
-          Tarjeta {currentIndex + 1} de {flashcardsData.length}
+          Tarjeta {currentIndex + 1} de {data.length}
         </span>
 
         <span className="instruction">
@@ -58,7 +69,7 @@ export default function Flashcards() {
           onClick={() => setFlipped(!flipped)}
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
-            
+
             {/* FRONT */}
             <div className="flashcard-front">
               <h2 className="card-title">{card.title}</h2>
@@ -85,16 +96,15 @@ export default function Flashcards() {
           </div>
         </div>
       </main>
-      
+
       <div className="pagination">
-        {flashcardsData.map((_, index) => (
+        {data.map((_, index) => (
           <span
             key={index}
             className={`dot ${index === currentIndex ? "active" : ""}`}
           />
         ))}
       </div>
-
 
       <div className="navigation-controls">
         <button onClick={prevCard} disabled={currentIndex === 0}>
@@ -103,13 +113,13 @@ export default function Flashcards() {
 
         <button
           onClick={nextCard}
-          disabled={currentIndex === flashcardsData.length - 1}
+          disabled={currentIndex === data.length - 1}
         >
           Siguiente &gt;
         </button>
 
         <button className="back-menu-btn" onClick={() => navigate("/menu")}>
-           &larr; Volver al menú
+          &larr; Volver al menú
         </button>
       </div>
     </div>
