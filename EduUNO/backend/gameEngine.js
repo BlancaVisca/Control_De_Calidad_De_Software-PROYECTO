@@ -10,6 +10,17 @@
 const COLORS = ['amarillo', 'azul', 'verde', 'rojo'];
 const RECICLES = ['organico', 'inorganico', 'noreciclable', 'metal'];
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const RECYCLE_BY_NUMBER_AND_COLOR = {
+  1: { amarillo: 'organico', azul: 'organico', verde: 'organico', rojo: 'organico' },
+  2: { amarillo: 'organico', azul: 'organico', verde: 'organico', rojo: 'organico' },
+  3: { amarillo: 'organico', azul: 'noreciclable', verde: 'noreciclable', rojo: 'noreciclable' },
+  4: { amarillo: 'noreciclable', azul: 'noreciclable', verde: 'noreciclable', rojo: 'noreciclable' },
+  5: { amarillo: 'noreciclable', azul: 'inorganico', verde: 'inorganico', rojo: 'inorganico' },
+  6: { amarillo: 'noreciclable', azul: 'inorganico', verde: 'inorganico', rojo: 'inorganico' },
+  7: { amarillo: 'inorganico', azul: 'metal', verde: 'metal', rojo: 'inorganico' },
+  8: { amarillo: 'inorganico', azul: 'metal', verde: 'metal', rojo: 'metal' },
+  9: { amarillo: 'metal', azul: 'metal', verde: 'metal', rojo: 'metal' }
+};
 
 const WILD_CARDS = [
   { name: 'comodin-cambiocolor', effect: 'changeColor' },
@@ -49,24 +60,25 @@ const QUESTIONS = [
   }
 ];
 
-// 🔹 Crear mazo completo (144 normales + 4 comodines = 148 cartas)
+// 🔹 Crear mazo usando solo combinaciones con imagen disponible (36 normales + 4 comodines = 40 cartas)
 function createDeck() {
   const deck = [];
   let id = 0;
 
-  // Cartas normales: 9 números × 4 colores × 4 reciclajes
+  // Cartas normales: 9 números × 4 colores con reciclaje definido por los assets existentes.
   for (const num of NUMBERS) {
     for (const color of COLORS) {
-      for (const recycle of RECICLES) {
-        deck.push({
-          id: `card-${id++}`,
-          type: 'normal',
-          number: num,
-          color,
-          recycle,
-          name: `${num}-${color}-${recycle}`
-        });
-      }
+      const recycle = RECYCLE_BY_NUMBER_AND_COLOR[num]?.[color];
+      if (!recycle) continue;
+
+      deck.push({
+        id: `card-${id++}`,
+        type: 'normal',
+        number: num,
+        color,
+        recycle,
+        name: `${num}-${color}-${recycle}`
+      });
     }
   }
 
@@ -237,5 +249,6 @@ module.exports = {
   RECICLES,
   NUMBERS,
   WILD_CARDS,
-  QUESTIONS
+  QUESTIONS,
+  RECYCLE_BY_NUMBER_AND_COLOR
 };

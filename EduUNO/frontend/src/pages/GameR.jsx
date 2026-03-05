@@ -8,9 +8,9 @@ export default function GameR() {
   const [questionsLeft] = useState(3);
 
   useEffect(() => {
-    fetch("http://localhost:3000/start", { method: "POST" })
-      .then(res => res.json())
-      .then(data => setGame(data))
+    fetch("http://localhost:3005/start", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setGame(data))
       .catch(() => console.log("Backend no conectado"));
   }, []);
 
@@ -23,20 +23,18 @@ export default function GameR() {
   }
 
   const drawCard = () => {
-    fetch("http://localhost:3000/draw", { method: "POST" })
-      .then(res => res.json())
-      .then(data => setGame(data))
-      .catch(err => console.error("Error robando carta:", err));
+    fetch("http://localhost:3005/draw", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setGame(data))
+      .catch((err) => console.error("Error robando carta:", err));
   };
 
   return (
     <div className="game-container">
-
       {/* =======================
           🔝 PANEL SUPERIOR
       ======================== */}
       <div className="top-panel">
-
         {/* ❤️ VIDAS */}
         <div className="lives">
           {Array.from({ length: lives }).map((_, i) => (
@@ -45,16 +43,13 @@ export default function GameR() {
         </div>
 
         {/* 🏷️ TURNO */}
-        <div className="turn-banner">
-          ¡Tu turno!
-        </div>
+        <div className="turn-banner">¡Tu turno!</div>
 
         {/* 📦 INFO MAZO */}
         <div className="deck-info">
           <span>Mazo: {game.deck.length}</span>
           <span>Preguntas: {questionsLeft}</span>
         </div>
-
       </div>
 
       {/* =======================
@@ -70,11 +65,8 @@ export default function GameR() {
           🟦 ZONA CENTRAL
       ======================== */}
       <div className="center-area">
-
         <div className="center-card">
-          {game.topCard && (
-            <Card card={game.topCard} />
-          )}
+          {game.topCard && <Card card={game.topCard} />}
         </div>
 
         <div className="controls">
@@ -82,11 +74,8 @@ export default function GameR() {
             Robar carta
           </button>
 
-          <button className="question-btn">
-            Pregunta educativa
-          </button>
+          <button className="question-btn">Pregunta educativa</button>
         </div>
-
       </div>
 
       {/* =======================
@@ -94,14 +83,9 @@ export default function GameR() {
       ======================== */}
       <div className="player-hand">
         {game.playerHand.map((card) => (
-          <Card
-            key={card.id}
-            card={card}
-            isPlayable={true}
-          />
+          <Card key={card.id} card={card} isPlayable={true} />
         ))}
       </div>
-
     </div>
   );
 }

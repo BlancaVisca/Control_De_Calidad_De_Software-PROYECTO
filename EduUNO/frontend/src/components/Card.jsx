@@ -39,6 +39,11 @@ export default function Card({
         draggable={false}
         loading="lazy"
         onError={(e) => {
+          if (!e.currentTarget.dataset.fallbackTried) {
+            e.currentTarget.dataset.fallbackTried = "true";
+            e.currentTarget.src = `/img/${card.name}.png`;
+            return;
+          }
           console.error(`❌ Error cargando comodín: ${card.name}.png`);
         }}
       />
@@ -59,6 +64,11 @@ export default function Card({
         draggable={false}
         loading="lazy"
         onError={(e) => {
+          if (!e.currentTarget.dataset.fallbackTried) {
+            e.currentTarget.dataset.fallbackTried = "true";
+            e.currentTarget.src = "/img/atras.jpg";
+            return;
+          }
           console.error(`❌ Error cargando carta: ${cardName}.jpg`);
         }}
       />
