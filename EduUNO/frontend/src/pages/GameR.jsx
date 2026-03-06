@@ -1,67 +1,91 @@
-import "../css/game.css"; // 👈 IMPORTANTE: CSS del juego
 import { useEffect, useState } from "react";
+import Card from "../components/Card";
+import "../css/game.css";
 
-export default function Game() {
+export default function GameR() {
   const [game, setGame] = useState(null);
+  const [lives] = useState(3);
+  const [questionsLeft] = useState(3);
 
   useEffect(() => {
-    fetch("http://localhost:3000/start", { method: "POST" })
-      .then(res => res.json())
-      .then(data => setGame(data))
+    fetch("http://localhost:3005/start", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setGame(data))
       .catch(() => console.log("Backend no conectado"));
   }, []);
 
-  if (!game) return <h1 style={{ textAlign: "center" }}>Cargando...</h1>;
+  if (!game) {
+    return (
+      <div className="loading-screen">
+        <h1>Cargando juego...</h1>
+      </div>
+    );
+  }
+
+  const drawCard = () => {
+    fetch("http://localhost:3005/draw", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setGame(data))
+      .catch((err) => console.error("Error robando carta:", err));
+  };
 
   return (
     <div className="game-container">
+      {/* =======================
+          🔝 PANEL SUPERIOR
+      ======================== */}
+      <div className="top-panel">
+        {/* ❤️ VIDAS */}
+        <div className="lives">
+          {Array.from({ length: lives }).map((_, i) => (
+            <img key={i} src="/img/vidas.png" alt="vida" />
+          ))}
+        </div>
 
-      {/* ❤️ VIDAS (arriba izquierda) */}
-      <div className="lives">
-        ❤️ ❤️ ❤️
+        {/* 🏷️ TURNO */}
+        <div className="turn-banner">¡Tu turno!</div>
+
+        {/* 📦 INFO MAZO */}
+        <div className="deck-info">
+          <span>Mazo: {game.deck.length}</span>
+          <span>Preguntas: {questionsLeft}</span>
+        </div>
       </div>
 
-      {/* 🃏 MAZO Y PREGUNTAS (arriba derecha) */}
-      <div className="deck-info">
-        <div>Cartas: {game.deck.length}</div>
-        <div>Preguntas: 3</div>
-      </div>
-
-      {/* 🟢 TURNO */}
-      <div className="turn-banner">
-        ¡Tu turno! Juega una carta o roba del mazo
-      </div>
-
-      {/* 🔴 OPONENTE */}
+      {/* =======================
+          🟥 OPONENTE
+      ======================== */}
       <div className="opponent">
-        {game.opponentHand.map((_, i) => (
-          <div key={i} className="card back" />
+        {game.opponentHand.map((card) => (
+          <Card key={card.id} hidden />
         ))}
       </div>
 
-      {/* 🟢 CARTA CENTRAL */}
-      <div className={`card center ${game.topCard.color}`}>
-        ♻️
+      {/* =======================
+          🟦 ZONA CENTRAL
+      ======================== */}
+      <div className="center-area">
+        <div className="center-card">
+          {game.topCard && <Card card={game.topCard} />}
+        </div>
+
+        <div className="controls">
+          <button className="draw-btn" onClick={drawCard}>
+            Robar carta
+          </button>
+
+          <button className="question-btn">Pregunta educativa</button>
+        </div>
       </div>
 
-      {/* 🔵 CONTROLES */}
-      <div className="controls">
-        <button className="draw-btn">Robar carta</button>
-        <button className="question-btn">Usar Pregunta Educativa</button>
-      </div>
-
-      {/* 🟡 MANO DEL JUGADOR */}
+      {/* =======================
+          🟩 MANO DEL JUGADOR
+      ======================== */}
       <div className="player-hand">
-        {game.playerHand.map((card, i) => (
-          <div
-            key={i}
-            className={`card ${card.color} ${i === 0 ? "playable" : ""}`}
-          >
-            {card.value}
-          </div>
+        {game.playerHand.map((card) => (
+          <Card key={card.id} card={card} isPlayable={true} />
         ))}
       </div>
-
     </div>
   );
 }
