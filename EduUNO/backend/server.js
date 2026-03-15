@@ -248,13 +248,13 @@ function makeOpponentMove() {
         gameState.winner = 'opponent';
         gameState.reason = 'empty_deck';
         gameState.lastAction = "Perdiste :( vuelve a intentarlo";
-        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin carta";
+        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
     } else {
         gameState.status = 'gameOver';
         gameState.winner = 'player';
         gameState.reason = 'empty_deck';
         gameState.lastAction = "Ganaste";
-        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin carta";
+        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
     }
     return;
   }
@@ -270,7 +270,7 @@ function makeOpponentMove() {
     gameState.winner = 'player';
     gameState.reason = 'empty_deck';
     gameState.lastAction = "Ganaste";
-    gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin carta";
+    gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
     return;
   }
 }

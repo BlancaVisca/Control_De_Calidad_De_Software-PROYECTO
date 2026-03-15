@@ -16,7 +16,10 @@ export default function GameR() {
   useEffect(() => {
     fetch("http://localhost:3005/start", { method: "POST" })
       .then(res => res.json())
-      .then(data => { setGame(data); setLoading(false); })
+      .then(data => { 
+        setGame(data); 
+        setLoading(false); 
+      })
       .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
@@ -71,9 +74,6 @@ export default function GameR() {
       } else {
         title = "😔 Perdiste";
         color = "#f87171";
-        borderColor = "rgba(239, 68, 68, 0.5)";
-        shadowColor = "rgba(239, 68, 68, 0.35)";
-        bgGradient = "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))";
       }
     } else if (game.reason === 'no_questions') {
       title = "⚠️ Sin Preguntas";
@@ -93,205 +93,36 @@ export default function GameR() {
       title = "💔 PERDISTE";
       subTitle = game.lastAction || "Inténtalo de nuevo.";
       color = "#f87171";
-      borderColor = "rgba(239, 68, 68, 0.5)";
-      shadowColor = "rgba(239, 68, 68, 0.35)";
-      bgGradient = "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))";
     }
 
     return (
       <div 
         className="game-over"
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100vw',
-          height: '100vh',
-          background: `
-            radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.15), transparent 50%),
-            radial-gradient(circle at 50% 70%, ${shadowColor}, transparent 60%),
-            linear-gradient(180deg, #050b1f 0%, #071530 50%, #050b1f 100%)
-          `,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          overflow: 'hidden'
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: `radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.15), transparent 50%), radial-gradient(circle at 50% 70%, ${shadowColor}, transparent 60%), linear-gradient(180deg, #050b1f 0%, #071530 50%, #050b1f 100%)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, overflow: 'hidden'
         }}
       >
-        {/* ✨ Partículas de fondo */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent),
-            radial-gradient(2px 2px at 40% 70%, rgba(255,255,255,0.2), transparent),
-            radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,0.3), transparent),
-            radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.2), transparent),
-            radial-gradient(2px 2px at 30% 80%, rgba(255,255,255,0.3), transparent)
-          `,
-          animation: 'twinkle 4s ease-in-out infinite'
-        }} />
-
-        {/* 📦 Contenido Centrado */}
-        <div 
-          style={{
-            position: 'relative',
-            zIndex: 10,
-            textAlign: 'center',
-            padding: '40px 30px',
-            maxWidth: '650px',
-            width: '90%',
-            animation: 'gameOverPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'
-          }}
-        >
-          {/* 🏆 Icono según resultado */}
-          <div style={{ 
-            fontSize: '5rem', 
-            marginBottom: '25px',
-            animation: 'float 3s ease-in-out infinite',
-            filter: `drop-shadow(0 0 30px ${shadowColor})`,
-            display: 'inline-block'
-          }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent), radial-gradient(2px 2px at 40% 70%, rgba(255,255,255,0.2), transparent)`, animation: 'twinkle 4s ease-in-out infinite' }} />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '40px 30px', maxWidth: '650px', width: '90%', animation: 'gameOverPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
+          <div style={{ fontSize: '5rem', marginBottom: '25px', animation: 'float 3s ease-in-out infinite', filter: `drop-shadow(0 0 30px ${shadowColor})`, display: 'inline-block' }}>
             {game.winner === 'player' ? '🏆' : game.reason === 'no_questions' ? '❓' : '💔'}
           </div>
-
-          {/* 📝 Título */}
-          <h1 
-            style={{
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '3.5rem',
-              color: color,
-              margin: '0 0 20px 0',
-              textShadow: `0 0 40px ${shadowColor}, 0 0 80px ${shadowColor}, 0 0 120px ${shadowColor}`,
-              letterSpacing: '3px',
-              textTransform: 'uppercase',
-              lineHeight: 1.1
-            }}
-          >
-            {title}
-          </h1>
-
-          {/* 📄 Subtítulo */}
-          <p 
-            style={{
-              fontSize: '1.3rem',
-              color: '#cbd5e1',
-              margin: '0 0 30px 0',
-              lineHeight: 1.6,
-              opacity: 0.95,
-              maxWidth: '500px',
-              marginLeft: 'auto',
-              marginRight: 'auto'
-            }}
-          >
-            {subTitle}
-          </p>
-
-          {/* 📊 Stats del juego (solo si es empty_deck) */}
+          <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '3.5rem', color: color, margin: '0 0 20px 0', textShadow: `0 0 40px ${shadowColor}`, letterSpacing: '3px', textTransform: 'uppercase', lineHeight: 1.1 }}>{title}</h1>
+          <p style={{ fontSize: '1.3rem', color: '#cbd5e1', margin: '0 0 30px 0', lineHeight: 1.6, opacity: 0.95, maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>{subTitle}</p>
           {game.reason === 'empty_deck' && (
-            <div 
-              style={{
-                fontSize: '1.1rem',
-                color: '#94a3b8',
-                background: 'rgba(0, 0, 0, 0.4)',
-                padding: '18px 30px',
-                borderRadius: '16px',
-                border: `1px solid ${borderColor}`,
-                marginBottom: '30px',
-                display: 'inline-flex',
-                justifyContent: 'center',
-                gap: '40px',
-                backdropFilter: 'blur(10px)',
-                boxShadow: `0 10px 40px ${shadowColor}`
-              }}
-            >
-              <span style={{ color: '#60a5fa' }}>
-                🫵 Tus cartas: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.playerHand.length}</strong>
-              </span>
-              <span style={{ color: '#f472b6' }}>
-                🤖 Oponente: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.opponentHand.length}</strong>
-              </span>
+            <div style={{ fontSize: '1.1rem', color: '#94a3b8', background: 'rgba(0, 0, 0, 0.4)', padding: '18px 30px', borderRadius: '16px', border: `1px solid ${borderColor}`, marginBottom: '30px', display: 'inline-flex', justifyContent: 'center', gap: '40px', backdropFilter: 'blur(10px)', boxShadow: `0 10px 40px ${shadowColor}` }}>
+              <span style={{ color: '#60a5fa' }}>🫵 Tus cartas: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.playerHand.length}</strong></span>
+              <span style={{ color: '#f472b6' }}>🤖 Oponente: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.opponentHand.length}</strong></span>
             </div>
           )}
-
-          {/* 🔄 Botón Jugar de Nuevo */}
-          <button 
-            onClick={() => window.location.reload()} 
-            style={{
-              padding: '18px 55px',
-              fontSize: '1.25rem',
-              background: game.winner === 'player' 
-                ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' 
-                : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)',
-              border: `2px solid ${borderColor}`,
-              borderRadius: '16px',
-              color: 'white',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: `0 15px 50px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
-              textTransform: 'uppercase',
-              letterSpacing: '2px',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseOver={(e) => {
-              e.target.style.transform = 'translateY(-5px) scale(1.02)';
-              e.target.style.boxShadow = `0 25px 60px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.3)`;
-            }}
-            onMouseOut={(e) => {
-              e.target.style.transform = 'translateY(0) scale(1)';
-              e.target.style.boxShadow = `0 15px 50px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`;
-            }}
-          >
-            🔄 Jugar de nuevo
-          </button>
-
-          {/* ♻️ Footer decorativo */}
-          <div style={{
-            marginTop: '35px',
-            paddingTop: '25px',
-            borderTop: `1px solid ${borderColor}`,
-            opacity: 0.5,
-            fontSize: '0.9rem',
-            color: '#64748b',
-            letterSpacing: '1px'
-          }}>
-            <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span>
-            <span>•</span>
-            <span style={{ marginLeft: '12px' }}>Educa y Juega</span>
+          <button onClick={() => window.location.reload()} style={{ padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
+          <div style={{ marginTop: '35px', paddingTop: '25px', borderTop: `1px solid ${borderColor}`, opacity: 0.5, fontSize: '0.9rem', color: '#64748b', letterSpacing: '1px' }}>
+            <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
           </div>
         </div>
-
-        {/* 🎬 Animaciones */}
-        <style>{`
-          @keyframes gameOverPopIn {
-            0% { 
-              opacity: 0; 
-              transform: scale(0.7) translateY(40px); 
-            }
-            100% { 
-              opacity: 1; 
-              transform: scale(1) translateY(0); 
-            }
-          }
-
-          @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(5deg); }
-          }
-
-          @keyframes twinkle {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.8; }
-          }
-        `}</style>
+        <style>{`@keyframes gameOverPopIn { 0% { opacity: 0; transform: scale(0.7) translateY(40px); } 100% { opacity: 1; transform: scale(1) translateY(0); } } @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(5deg); } } @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }`}</style>
       </div>
     );
   }
@@ -299,36 +130,16 @@ export default function GameR() {
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
     try {
-      const res = await fetch("http://localhost:3005/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card })
-      });
+      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
       const data = await res.json();
-
-      if (data.status === 'gameOver') {
+      if (data.status === 'gameOver') { setGame(data); return; }
+      if (data.error) { setModalMessage(`⚠️ ${data.error}`); } 
+      else if (data.needsChoice) { setPendingChoice({ card: card, type: data.choiceType, options: data.availableOptions, message: data.message }); } 
+      else {
         setGame(data);
-        return;
-      }
-
-      if (data.error) {
-        setModalMessage(`⚠️ ${data.error}`);
-      } else if (data.needsChoice) {
-        setPendingChoice({
-          card: card,
-          type: data.choiceType,
-          options: data.availableOptions,
-          message: data.message
-        });
-      } else {
-        setGame(data);
-        if (data.currentPlayer === 'player' && card.type === 'wild' && card.effect === 'skipRecycle') {
-          setModalMessage("✨ ¡Salto de Reciclaje! Tira otra carta.");
-        } else if (data.freePlay) {
-          setModalMessage("🌟 ¡MODO LIBRE! Tira cualquier carta.");
-        } else if (data.lastAction.includes("¡RECICLA!")) {
-          setModalMessage("⚠️ ¡RECICLA!");
-        }
+        if (data.currentPlayer === 'player' && card.type === 'wild' && card.effect === 'skipRecycle') setModalMessage("✨ ¡Salto de Reciclaje! Tira otra carta.");
+        else if (data.freePlay) setModalMessage("🌟 ¡MODO LIBRE! Tira cualquier carta.");
+        else if (data.lastAction.includes("¡RECICLA!")) setModalMessage("⚠️ ¡RECICLA!");
       }
     } catch (err) { console.error(err); }
   };
@@ -336,25 +147,12 @@ export default function GameR() {
   const handleChoice = async (selection) => {
     if (!pendingChoice) return;
     try {
-      const body = {
-        card: pendingChoice.card,
-        chosenColor: pendingChoice.type === 'color' ? selection : null,
-        chosenRecycle: pendingChoice.type === 'recycle' ? selection : null
-      };
-      const res = await fetch("http://localhost:3005/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
+      const body = { card: pendingChoice.card, chosenColor: pendingChoice.type === 'color' ? selection : null, chosenRecycle: pendingChoice.type === 'recycle' ? selection : null };
+      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.status === 'gameOver') {
-        setGame(data);
-        setPendingChoice(null);
-        return;
-      }
-      if (data.error) {
-        setModalMessage(`Error: ${data.error}`);
-      } else {
+      if (data.status === 'gameOver') { setGame(data); setPendingChoice(null); return; }
+      if (data.error) { setModalMessage(`Error: ${data.error}`); } 
+      else {
         setGame(data);
         setPendingChoice(null);
         if (data.freePlay) setModalMessage("🌟 ¡MODO LIBRE!");
@@ -367,12 +165,7 @@ export default function GameR() {
     if (game.currentPlayer !== 'player') return;
     const res = await fetch("http://localhost:3005/draw", { method: "POST" });
     const data = await res.json();
-    
-    if (data.status === 'gameOver') {
-      setGame(data);
-      return;
-    }
-
+    if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) setModalMessage(data.error);
     else {
       setGame(data);
@@ -382,63 +175,69 @@ export default function GameR() {
 
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== 'player') return;
-
     if (game.freePlay) {
        const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
        const data = await res.json();
-       if (data.status === 'gameOver') {
-         setGame(data);
-         return;
-       }
+       if (data.status === 'gameOver') { setGame(data); return; }
        setGame(data);
        setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
        return;
     }
-
     const res = await fetch("http://localhost:3005/question");
     const data = await res.json();
-    
-    if (data.status === 'gameOver') {
-      setGame(data);
-      return;
-    }
-
+    if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) {
-      if (data.error.includes("Sin preguntas")) {
-         setModalMessage("Has perdido intentalo de nuevo");
-      } else {
-         setModalMessage(data.error);
-      }
+      if (data.error.includes("Sin preguntas")) setModalMessage("Has perdido intentalo de nuevo");
+      else setModalMessage(data.error);
     } else {
       setSelectedQuestion(data);
       setUserAnswer(null);
     }
   };
 
+  // 🔥 CORRECCIÓN CRÍTICA AQUÍ: Actualización forzosa de vidas
   const handleSubmitAnswer = async (optionIndex) => {
     if (!selectedQuestion) return;
     setUserAnswer(optionIndex);
-    const res = await fetch("http://localhost:3005/answer-question", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questionId: selectedQuestion.id, selectedOption: optionIndex })
-    });
-    const data = await res.json();
     
-    if (data.status === 'gameOver') {
+    try {
+      const res = await fetch("http://localhost:3005/answer-question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId: selectedQuestion.id, selectedOption: optionIndex })
+      });
+      const data = await res.json();
+      
+      if (data.status === 'gameOver') {
+        setGame(data);
+        return;
+      }
+
+      // 1. Actualizamos el estado del juego con los datos del servidor (incluyendo lives restadas)
       setGame(data);
-      return;
-    }
 
-    setGame(data);
+      // 2. Preparamos el mensaje
+      let msg = "";
+      if (data.questionResult === 'success') {
+        msg = "✅ ¡Correcto! 🌟 MODO LIBRE ACTIVADO.";
+      } else {
+        // Aquí es donde el servidor dice cuántas vidas quedan
+        const vidasRestantes = data.lives; 
+        msg = `❌ Incorrecto. Pierdes 1 vida. Te quedan: ${vidasRestantes} ❤️`;
+      }
+      
+      setModalMessage(msg);
 
-    if (data.questionResult === 'success') {
-      setModalMessage("✅ ¡Correcto! 🌟 MODO LIBRE ACTIVADO: Tira cualquier carta.");
-    } else {
-      setModalMessage(`❌ Incorrecto. ${data.message} Vidas restantes: ${data.lives}`);
+      // 3. Cerramos el modal de pregunta después de un breve delay
+      setTimeout(() => { 
+        setSelectedQuestion(null); 
+        setModalMessage(null); 
+      }, 3000);
+
+    } catch (err) {
+      console.error("Error al enviar respuesta:", err);
+      setModalMessage("❌ Error de conexión al responder.");
     }
-    
-    setTimeout(() => { setSelectedQuestion(null); setModalMessage(null); }, 3000);
   };
 
   const canPlay = (card, topCard) => {
@@ -457,119 +256,55 @@ export default function GameR() {
 
   return (
     <div className="game-container">
-      <GameHUD deckCount={game.deck.length} lives={game.lives} questionsAvailable={game.questionsLeft} currentPlayer={game.currentPlayer} lastAction={game.lastAction} />
+      {/* 🔥 GameHUD recibe game.lives directamente. Si game se actualiza, esto cambia. */}
+      <GameHUD 
+        deckCount={game.deck.length} 
+        lives={game.lives} 
+        questionsAvailable={game.questionsLeft} 
+        currentPlayer={game.currentPlayer} 
+        lastAction={game.lastAction} 
+      />
       
-      {/* 🔥 NUEVO PANEL DE INFORMACIÓN DE CARTA ACTUAL (Esquina Superior Derecha) */}
+      {/* Panel de Información de Carta Actual */}
       {game.topCard && (
         <div style={{
-          position: 'absolute',
-          top: '90px', // Ajustado para estar debajo del HUD
-          right: '20px',
-          width: '240px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(59, 130, 246, 0.4)',
-          borderRadius: '16px',
-          padding: '20px',
-          color: '#ffffff',
-          zIndex: 100,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15)',
-          transition: 'all 0.3s ease'
+          position: 'absolute', top: '90px', right: '20px', width: '240px',
+          background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '16px',
+          padding: '20px', color: '#ffffff', zIndex: 100,
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15)'
         }}>
-          <h4 style={{
-            margin: '0 0 15px 0',
-            fontSize: '0.85rem',
-            textTransform: 'uppercase',
-            letterSpacing: '1.5px',
-            color: '#93c5fd',
-            borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
-            paddingBottom: '8px',
-            fontWeight: '700'
-          }}>
-            ♻️ Carta en Juego
-          </h4>
-
-          {/* Color */}
+          <h4 style={{ margin: '0 0 15px 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#93c5fd', borderBottom: '1px solid rgba(59, 130, 246, 0.3)', paddingBottom: '8px', fontWeight: '700' }}>♻️ Carta en Juego</h4>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>🎨 COLOR</div>
-            <div style={{ 
-              fontSize: '1.1rem', 
-              fontWeight: '800', 
-              textTransform: 'uppercase', 
-              color: getColorStyle(game.topCard.color),
-              textShadow: `0 0 10px ${getColorStyle(game.topCard.color)}66`
-            }}>
-              {game.topCard.color || 'Comodín'}
-            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '800', textTransform: 'uppercase', color: getColorStyle(game.topCard.color), textShadow: `0 0 10px ${getColorStyle(game.topCard.color)}66` }}>{game.topCard.color || 'Comodín'}</div>
           </div>
-
-          {/* Número (si existe) */}
           {game.topCard.number && (
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>🔢 NÚMERO</div>
-              <div style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: '900', 
-                color: '#ffffff',
-                fontFamily: "'Archivo Black', sans-serif"
-              }}>
-                {game.topCard.number}
-              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#ffffff', fontFamily: "'Archivo Black', sans-serif" }}>{game.topCard.number}</div>
             </div>
           )}
-
-          {/* Reciclaje */}
           <div>
             <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>♻️ RECICLAJE</div>
-            <div style={{ 
-              fontSize: '0.95rem', 
-              fontWeight: '700', 
-              lineHeight: '1.3',
-              color: '#e2e8f0'
-            }}>
-              {formatRecycleText(game.topCard.recycle)}
-            </div>
+            <div style={{ fontSize: '0.95rem', fontWeight: '700', lineHeight: '1.3', color: '#e2e8f0' }}>{formatRecycleText(game.topCard.recycle)}</div>
           </div>
-
-          {/* Indicador de Regla Especial */}
           {game.specialRule === 'skipRecycle' && (
-            <div style={{
-              marginTop: '15px',
-              padding: '8px 12px',
-              background: 'rgba(245, 158, 11, 0.2)',
-              border: '1px solid rgba(245, 158, 11, 0.5)',
-              borderRadius: '8px',
-              color: '#fbbf24',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              textAlign: 'center',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              animation: 'pulse 2s infinite'
-            }}>
-              ⚡ Solo Color y Número
-            </div>
+            <div style={{ marginTop: '15px', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.5)', borderRadius: '8px', color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px', animation: 'pulse 2s infinite' }}>⚡ Solo Color y Número</div>
           )}
         </div>
       )}
 
       <OpponentHand hand={game.opponentHand} hidden={true} />
-      
       <div className="center-area">
         <div className="center-card">{game.topCard && <Card card={game.topCard} />}</div>
         <div className="controls">
           <button className="draw-btn" onClick={handleDrawCard} disabled={game.currentPlayer !== 'player'}>Robar</button>
-          <button 
-            className="question-btn" 
-            onClick={handleOpenQuestion} 
-            disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0}
-            style={{ opacity: game.freePlay ? 0.6 : 1 }}
-          >
+          <button className="question-btn" onClick={handleOpenQuestion} disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0} style={{ opacity: game.freePlay ? 0.6 : 1 }}>
             {game.freePlay ? "¡Modo Libre Activo!" : `Pregunta (${game.questionsLeft})`}
           </button>
         </div>
       </div>
-      
       <PlayerHand hand={game.playerHand} topCard={game.topCard} onPlay={handlePlayCard} canPlay={canPlay} currentPlayer={game.currentPlayer} />
 
       {pendingChoice && (

@@ -227,6 +227,12 @@
   transform: translateY(-2px);
 }
 
+.lives img.lost {
+  opacity: 0;           /* Lo hace transparente */
+  visibility: hidden;   /* Oculta el elemento completamente */
+  filter: none;         /* Quita el brillo rojo */
+  pointer-events: none; /* No se puede clicar */
+}
 /* ========================================
    RESPONSIVE
 ======================================== */
