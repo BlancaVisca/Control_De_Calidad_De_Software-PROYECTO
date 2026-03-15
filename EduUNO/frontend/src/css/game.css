@@ -119,7 +119,7 @@
 
 .center-card .card-img {
   width: 90px;   /* 🔥 más pequeña */
-  height: 135px;
+  height: 127px;
   border: 2px solid rgba(148, 163, 184, 0.4);
   box-shadow:
     0 0 30px rgba(59, 130, 246, 0.5),
@@ -256,8 +256,8 @@
 }
 /* 🔥 TAMAÑO PROFESIONAL DE CARTAS */
 .card-img {
-  width: 90px;        /* tamaño fijo */
-  height: 130px;      /* proporción tipo UNO */
+  width: 80px;        /* tamaño fijo */
+  height: 110px;      /* proporción tipo UNO */
   object-fit: contain;
   margin: 6px;
   border-radius: 10px;

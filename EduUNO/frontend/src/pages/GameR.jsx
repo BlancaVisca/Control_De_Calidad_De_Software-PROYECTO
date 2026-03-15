@@ -11,252 +11,598 @@ export default function GameR() {
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [userAnswer, setUserAnswer] = useState(null);
   const [modalMessage, setModalMessage] = useState(null);
+  const [pendingChoice, setPendingChoice] = useState(null);
 
   useEffect(() => {
     fetch("http://localhost:3005/start", { method: "POST" })
-      .then((res) => res.json())
-      .then((data) => {
-        setGame(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Backend no conectado", err);
-        setLoading(false);
-      });
+      .then(res => res.json())
+      .then(data => { setGame(data); setLoading(false); })
+      .catch(err => { console.error(err); setLoading(false); });
   }, []);
 
-  // Polling para actualizar cuando juega la IA
   useEffect(() => {
     if (!game || game.status === 'gameOver' || game.currentPlayer === 'player') return;
-    
     const interval = setInterval(() => {
       fetch("http://localhost:3005/status")
         .then(res => res.json())
-        .then(data => setGame(data));
+        .then(data => setGame(prev => ({ ...prev, ...data })));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [game?.currentPlayer, game?.status]);
 
-  if (loading || !game) {
-    return <div className="loading-screen"><h1>Cargando juego...</h1></div>;
-  }
+  if (loading || !game) return <div className="loading-screen"><h1>Cargando...</h1></div>;
+
+  // 🔥 FUNCIÓN AUXILIAR PARA FORMATEAR TEXTO DE RECICLAJE
+  const formatRecycleText = (recycle) => {
+    if (!recycle) return '';
+    if (recycle === 'organico') return 'Orgánico';
+    if (recycle === 'inorganico') return 'Inorgánico Reciclable';
+    if (recycle === 'noreciclable') return 'Inorgánico No Reciclable';
+    if (recycle === 'metal') return 'Metal';
+    return recycle;
+  };
+
+  // 🔥 FUNCIÓN AUXILIAR PARA COLOR DEL TEXTO
+  const getColorStyle = (color) => {
+    if (!color) return '#ffffff';
+    if (color === 'rojo') return '#ef4444';
+    if (color === 'azul') return '#3b82f6';
+    if (color === 'amarillo') return '#eab308';
+    if (color === 'verde') return '#22c55e';
+    return '#ffffff';
+  };
 
   if (game.status === 'gameOver') {
+    let title = "";
+    let subTitle = "";
+    let color = "#f87171"; 
+    let borderColor = "rgba(239, 68, 68, 0.5)";
+    let shadowColor = "rgba(239, 68, 68, 0.35)";
+    let bgGradient = "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))";
+
+    if (game.reason === 'empty_deck') {
+      subTitle = game.endMessageSub || "Partida finalizada, el mazo se ha quedado sin cartas";
+      if (game.winner === 'player') {
+        title = "🎉 ¡GANASTE!";
+        color = "#4ade80";
+        borderColor = "rgba(34, 197, 94, 0.5)";
+        shadowColor = "rgba(34, 197, 94, 0.35)";
+        bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
+      } else {
+        title = "😔 Perdiste";
+        color = "#f87171";
+        borderColor = "rgba(239, 68, 68, 0.5)";
+        shadowColor = "rgba(239, 68, 68, 0.35)";
+        bgGradient = "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))";
+      }
+    } else if (game.reason === 'no_questions') {
+      title = "⚠️ Sin Preguntas";
+      subTitle = "Te has quedado sin preguntas educativas.";
+      color = "#fbbf24";
+      borderColor = "rgba(245, 158, 11, 0.5)";
+      shadowColor = "rgba(245, 158, 11, 0.35)";
+      bgGradient = "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))";
+    } else if (game.winner === 'player') {
+      title = "🎉 ¡GANASTE!";
+      subTitle = "El oponente se quedó sin cartas o vidas.";
+      color = "#4ade80";
+      borderColor = "rgba(34, 197, 94, 0.5)";
+      shadowColor = "rgba(34, 197, 94, 0.35)";
+      bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
+    } else {
+      title = "💔 PERDISTE";
+      subTitle = game.lastAction || "Inténtalo de nuevo.";
+      color = "#f87171";
+      borderColor = "rgba(239, 68, 68, 0.5)";
+      shadowColor = "rgba(239, 68, 68, 0.35)";
+      bgGradient = "linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15))";
+    }
+
     return (
-      <div className="loading-screen" style={{flexDirection: 'column', gap: '20px'}}>
-        <h1 style={{fontSize: '3rem', color: game.winner === 'player' ? '#4ade80' : '#f87171'}}>
-          {game.winner === 'player' ? '¡GANASTE!' : 'PERDISTE'}
-        </h1>
-        <p style={{fontSize: '1.2rem'}}>{game.lastAction}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="draw-btn"
-          style={{padding: '12px 24px', fontSize: '1rem'}}
+      <div 
+        className="game-over"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          background: `
+            radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.15), transparent 50%),
+            radial-gradient(circle at 50% 70%, ${shadowColor}, transparent 60%),
+            linear-gradient(180deg, #050b1f 0%, #071530 50%, #050b1f 100%)
+          `,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          overflow: 'hidden'
+        }}
+      >
+        {/* ✨ Partículas de fondo */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: `
+            radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent),
+            radial-gradient(2px 2px at 40% 70%, rgba(255,255,255,0.2), transparent),
+            radial-gradient(1px 1px at 60% 40%, rgba(255,255,255,0.3), transparent),
+            radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.2), transparent),
+            radial-gradient(2px 2px at 30% 80%, rgba(255,255,255,0.3), transparent)
+          `,
+          animation: 'twinkle 4s ease-in-out infinite'
+        }} />
+
+        {/* 📦 Contenido Centrado */}
+        <div 
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            textAlign: 'center',
+            padding: '40px 30px',
+            maxWidth: '650px',
+            width: '90%',
+            animation: 'gameOverPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}
         >
-          Jugar de nuevo
-        </button>
+          {/* 🏆 Icono según resultado */}
+          <div style={{ 
+            fontSize: '5rem', 
+            marginBottom: '25px',
+            animation: 'float 3s ease-in-out infinite',
+            filter: `drop-shadow(0 0 30px ${shadowColor})`,
+            display: 'inline-block'
+          }}>
+            {game.winner === 'player' ? '🏆' : game.reason === 'no_questions' ? '❓' : '💔'}
+          </div>
+
+          {/* 📝 Título */}
+          <h1 
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '3.5rem',
+              color: color,
+              margin: '0 0 20px 0',
+              textShadow: `0 0 40px ${shadowColor}, 0 0 80px ${shadowColor}, 0 0 120px ${shadowColor}`,
+              letterSpacing: '3px',
+              textTransform: 'uppercase',
+              lineHeight: 1.1
+            }}
+          >
+            {title}
+          </h1>
+
+          {/* 📄 Subtítulo */}
+          <p 
+            style={{
+              fontSize: '1.3rem',
+              color: '#cbd5e1',
+              margin: '0 0 30px 0',
+              lineHeight: 1.6,
+              opacity: 0.95,
+              maxWidth: '500px',
+              marginLeft: 'auto',
+              marginRight: 'auto'
+            }}
+          >
+            {subTitle}
+          </p>
+
+          {/* 📊 Stats del juego (solo si es empty_deck) */}
+          {game.reason === 'empty_deck' && (
+            <div 
+              style={{
+                fontSize: '1.1rem',
+                color: '#94a3b8',
+                background: 'rgba(0, 0, 0, 0.4)',
+                padding: '18px 30px',
+                borderRadius: '16px',
+                border: `1px solid ${borderColor}`,
+                marginBottom: '30px',
+                display: 'inline-flex',
+                justifyContent: 'center',
+                gap: '40px',
+                backdropFilter: 'blur(10px)',
+                boxShadow: `0 10px 40px ${shadowColor}`
+              }}
+            >
+              <span style={{ color: '#60a5fa' }}>
+                🫵 Tus cartas: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.playerHand.length}</strong>
+              </span>
+              <span style={{ color: '#f472b6' }}>
+                🤖 Oponente: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.opponentHand.length}</strong>
+              </span>
+            </div>
+          )}
+
+          {/* 🔄 Botón Jugar de Nuevo */}
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{
+              padding: '18px 55px',
+              fontSize: '1.25rem',
+              background: game.winner === 'player' 
+                ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' 
+                : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)',
+              border: `2px solid ${borderColor}`,
+              borderRadius: '16px',
+              color: 'white',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: `0 15px 50px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+              textTransform: 'uppercase',
+              letterSpacing: '2px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = 'translateY(-5px) scale(1.02)';
+              e.target.style.boxShadow = `0 25px 60px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.3)`;
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = 'translateY(0) scale(1)';
+              e.target.style.boxShadow = `0 15px 50px ${shadowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`;
+            }}
+          >
+            🔄 Jugar de nuevo
+          </button>
+
+          {/* ♻️ Footer decorativo */}
+          <div style={{
+            marginTop: '35px',
+            paddingTop: '25px',
+            borderTop: `1px solid ${borderColor}`,
+            opacity: 0.5,
+            fontSize: '0.9rem',
+            color: '#64748b',
+            letterSpacing: '1px'
+          }}>
+            <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span>
+            <span>•</span>
+            <span style={{ marginLeft: '12px' }}>Educa y Juega</span>
+          </div>
+        </div>
+
+        {/* 🎬 Animaciones */}
+        <style>{`
+          @keyframes gameOverPopIn {
+            0% { 
+              opacity: 0; 
+              transform: scale(0.7) translateY(40px); 
+            }
+            100% { 
+              opacity: 1; 
+              transform: scale(1) translateY(0); 
+            }
+          }
+
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+          }
+
+          @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+          }
+        `}</style>
       </div>
     );
   }
 
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
-
     try {
       const res = await fetch("http://localhost:3005/play", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ card }),
+        body: JSON.stringify({ card })
       });
       const data = await res.json();
 
+      if (data.status === 'gameOver') {
+        setGame(data);
+        return;
+      }
+
       if (data.error) {
         setModalMessage(`⚠️ ${data.error}`);
+      } else if (data.needsChoice) {
+        setPendingChoice({
+          card: card,
+          type: data.choiceType,
+          options: data.availableOptions,
+          message: data.message
+        });
       } else {
         setGame(data);
-        if (data.lastAction.includes("¡RECICLA!")) {
-          setModalMessage("⚠️ ¡RECICLA! Te queda 1 carta.");
+        if (data.currentPlayer === 'player' && card.type === 'wild' && card.effect === 'skipRecycle') {
+          setModalMessage("✨ ¡Salto de Reciclaje! Tira otra carta.");
+        } else if (data.freePlay) {
+          setModalMessage("🌟 ¡MODO LIBRE! Tira cualquier carta.");
+        } else if (data.lastAction.includes("¡RECICLA!")) {
+          setModalMessage("⚠️ ¡RECICLA!");
         }
       }
-    } catch (err) {
-      console.error("Error jugando carta:", err);
-    }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleChoice = async (selection) => {
+    if (!pendingChoice) return;
+    try {
+      const body = {
+        card: pendingChoice.card,
+        chosenColor: pendingChoice.type === 'color' ? selection : null,
+        chosenRecycle: pendingChoice.type === 'recycle' ? selection : null
+      };
+      const res = await fetch("http://localhost:3005/play", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (data.status === 'gameOver') {
+        setGame(data);
+        setPendingChoice(null);
+        return;
+      }
+      if (data.error) {
+        setModalMessage(`Error: ${data.error}`);
+      } else {
+        setGame(data);
+        setPendingChoice(null);
+        if (data.freePlay) setModalMessage("🌟 ¡MODO LIBRE!");
+        else if (data.lastAction.includes("¡RECICLA!")) setModalMessage("⚠️ ¡RECICLA!");
+      }
+    } catch (err) { console.error(err); }
   };
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
-    try {
-      const res = await fetch("http://localhost:3005/draw", { method: "POST" });
-      const data = await res.json();
-      if (data.error) {
-        setModalMessage(data.error);
-      } else {
-        setGame(data);
-        if (data.consecutiveDraws >= 3) {
-          setModalMessage("⚠️ Has robado 3 cartas. ¡Usa una Pregunta Educativa!");
-        }
-      }
-    } catch (err) {
-      console.error("Error robando:", err);
+    const res = await fetch("http://localhost:3005/draw", { method: "POST" });
+    const data = await res.json();
+    
+    if (data.status === 'gameOver') {
+      setGame(data);
+      return;
+    }
+
+    if (data.error) setModalMessage(data.error);
+    else {
+      setGame(data);
+      if (data.consecutiveDraws >= 3) setModalMessage("⚠️ 3 cartas robadas. ¡Usa Pregunta!");
     }
   };
 
   const handleOpenQuestion = async () => {
-    if (game.questionsLeft <= 0) {
-      setModalMessage("No te quedan preguntas disponibles.");
-      return;
-    }
     if (game.currentPlayer !== 'player') return;
 
-    try {
-      const res = await fetch("http://localhost:3005/question");
-      const data = await res.json();
-      if (data.error) {
-        setModalMessage(data.error);
+    if (game.freePlay) {
+       const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
+       const data = await res.json();
+       if (data.status === 'gameOver') {
+         setGame(data);
+         return;
+       }
+       setGame(data);
+       setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
+       return;
+    }
+
+    const res = await fetch("http://localhost:3005/question");
+    const data = await res.json();
+    
+    if (data.status === 'gameOver') {
+      setGame(data);
+      return;
+    }
+
+    if (data.error) {
+      if (data.error.includes("Sin preguntas")) {
+         setModalMessage("Has perdido intentalo de nuevo");
       } else {
-        setSelectedQuestion(data);
-        setUserAnswer(null);
+         setModalMessage(data.error);
       }
-    } catch (err) {
-      console.error("Error cargando pregunta:", err);
+    } else {
+      setSelectedQuestion(data);
+      setUserAnswer(null);
     }
   };
 
   const handleSubmitAnswer = async (optionIndex) => {
     if (!selectedQuestion) return;
     setUserAnswer(optionIndex);
-
-    try {
-      const res = await fetch("http://localhost:3005/answer-question", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          questionId: selectedQuestion.id,
-          selectedOption: optionIndex
-        }),
-      });
-      const data = await res.json();
-      
+    const res = await fetch("http://localhost:3005/answer-question", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId: selectedQuestion.id, selectedOption: optionIndex })
+    });
+    const data = await res.json();
+    
+    if (data.status === 'gameOver') {
       setGame(data);
-      
-      if (data.questionResult === 'success') {
-        setModalMessage("✅ ¡Correcto! Ahora puedes jugar libremente (simulado).");
-      } else {
-        setModalMessage(`❌ Incorrecto. ${data.message}`);
-      }
-      
-      setTimeout(() => {
-        setSelectedQuestion(null);
-        setModalMessage(null);
-      }, 2000);
-    } catch (err) {
-      console.error("Error enviando respuesta:", err);
+      return;
     }
+
+    setGame(data);
+
+    if (data.questionResult === 'success') {
+      setModalMessage("✅ ¡Correcto! 🌟 MODO LIBRE ACTIVADO: Tira cualquier carta.");
+    } else {
+      setModalMessage(`❌ Incorrecto. ${data.message} Vidas restantes: ${data.lives}`);
+    }
+    
+    setTimeout(() => { setSelectedQuestion(null); setModalMessage(null); }, 3000);
   };
 
   const canPlay = (card, topCard) => {
+    if (!topCard) return true;
     if (card.type === 'wild') return true;
-    if (card.recycle === topCard.recycle && card.number === topCard.number) return true;
-    if (card.recycle === topCard.recycle && card.color === topCard.color) return true;
+    if (game.freePlay) return true;
+    if (game.specialRule === 'skipRecycle') {
+       return (card.color === topCard.color || card.number === topCard.number);
+    }
+    if (card.recycle === topCard.recycle) {
+       if (card.number === topCard.number) return true;
+       if (card.color === topCard.color) return true;
+    }
     return false;
   };
 
   return (
     <div className="game-container">
-      <GameHUD 
-        deckCount={game.deck.length}
-        lives={game.lives}
-        questionsAvailable={game.questionsLeft}
-        currentPlayer={game.currentPlayer}
-        lastAction={game.lastAction}
-      />
+      <GameHUD deckCount={game.deck.length} lives={game.lives} questionsAvailable={game.questionsLeft} currentPlayer={game.currentPlayer} lastAction={game.lastAction} />
+      
+      {/* 🔥 NUEVO PANEL DE INFORMACIÓN DE CARTA ACTUAL (Esquina Superior Derecha) */}
+      {game.topCard && (
+        <div style={{
+          position: 'absolute',
+          top: '90px', // Ajustado para estar debajo del HUD
+          right: '20px',
+          width: '240px',
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(59, 130, 246, 0.4)',
+          borderRadius: '16px',
+          padding: '20px',
+          color: '#ffffff',
+          zIndex: 100,
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15)',
+          transition: 'all 0.3s ease'
+        }}>
+          <h4 style={{
+            margin: '0 0 15px 0',
+            fontSize: '0.85rem',
+            textTransform: 'uppercase',
+            letterSpacing: '1.5px',
+            color: '#93c5fd',
+            borderBottom: '1px solid rgba(59, 130, 246, 0.3)',
+            paddingBottom: '8px',
+            fontWeight: '700'
+          }}>
+            ♻️ Carta en Juego
+          </h4>
+
+          {/* Color */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>🎨 COLOR</div>
+            <div style={{ 
+              fontSize: '1.1rem', 
+              fontWeight: '800', 
+              textTransform: 'uppercase', 
+              color: getColorStyle(game.topCard.color),
+              textShadow: `0 0 10px ${getColorStyle(game.topCard.color)}66`
+            }}>
+              {game.topCard.color || 'Comodín'}
+            </div>
+          </div>
+
+          {/* Número (si existe) */}
+          {game.topCard.number && (
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>🔢 NÚMERO</div>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: '900', 
+                color: '#ffffff',
+                fontFamily: "'Archivo Black', sans-serif"
+              }}>
+                {game.topCard.number}
+              </div>
+            </div>
+          )}
+
+          {/* Reciclaje */}
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>♻️ RECICLAJE</div>
+            <div style={{ 
+              fontSize: '0.95rem', 
+              fontWeight: '700', 
+              lineHeight: '1.3',
+              color: '#e2e8f0'
+            }}>
+              {formatRecycleText(game.topCard.recycle)}
+            </div>
+          </div>
+
+          {/* Indicador de Regla Especial */}
+          {game.specialRule === 'skipRecycle' && (
+            <div style={{
+              marginTop: '15px',
+              padding: '8px 12px',
+              background: 'rgba(245, 158, 11, 0.2)',
+              border: '1px solid rgba(245, 158, 11, 0.5)',
+              borderRadius: '8px',
+              color: '#fbbf24',
+              fontSize: '0.75rem',
+              fontWeight: '800',
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              animation: 'pulse 2s infinite'
+            }}>
+              ⚡ Solo Color y Número
+            </div>
+          )}
+        </div>
+      )}
 
       <OpponentHand hand={game.opponentHand} hidden={true} />
-
+      
       <div className="center-area">
-        <div className="center-card">
-          {game.topCard && <Card card={game.topCard} />}
-        </div>
-
+        <div className="center-card">{game.topCard && <Card card={game.topCard} />}</div>
         <div className="controls">
-          <button 
-            className="draw-btn" 
-            onClick={handleDrawCard}
-            disabled={game.currentPlayer !== 'player'}
-          >
-            Robar carta
-          </button>
-
+          <button className="draw-btn" onClick={handleDrawCard} disabled={game.currentPlayer !== 'player'}>Robar</button>
           <button 
             className="question-btn" 
-            onClick={handleOpenQuestion}
+            onClick={handleOpenQuestion} 
             disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0}
+            style={{ opacity: game.freePlay ? 0.6 : 1 }}
           >
-            Pregunta educativa ({game.questionsLeft})
+            {game.freePlay ? "¡Modo Libre Activo!" : `Pregunta (${game.questionsLeft})`}
           </button>
         </div>
       </div>
+      
+      <PlayerHand hand={game.playerHand} topCard={game.topCard} onPlay={handlePlayCard} canPlay={canPlay} currentPlayer={game.currentPlayer} />
 
-      <PlayerHand 
-        hand={game.playerHand}
-        topCard={game.topCard}
-        onPlay={handlePlayCard}
-        canPlay={canPlay}
-        currentPlayer={game.currentPlayer}
-        isProcessing={false}
-      />
-
-      {/* Modal de Pregunta */}
-      {selectedQuestion && (
-        <div className="modal-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div className="modal-content" style={{
-            background: '#1e293b', padding: '2rem', borderRadius: '16px', 
-            maxWidth: '500px', width: '90%', border: '1px solid #3b82f6',
-            boxShadow: '0 0 30px rgba(59, 130, 246, 0.5)'
-          }}>
-            <h3 style={{color: '#60a5fa', marginBottom: '1.5rem', textAlign: 'center'}}>❓ {selectedQuestion.question}</h3>
-            <div className="options-grid" style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-              {selectedQuestion.options.map((opt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSubmitAnswer(idx)}
-                  disabled={userAnswer !== null}
-                  style={{
-                    padding: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer',
-                    background: userAnswer === idx 
-                      ? (idx === selectedQuestion.correct ? '#22c55e' : '#ef4444') 
-                      : '#334155',
-                    color: 'white', fontWeight: 'bold', transition: 'all 0.2s'
-                  }}
-                >
-                  {opt}
-                </button>
+      {pendingChoice && (
+        <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
+          <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #3b82f6', textAlign:'center', maxWidth:'400px', width:'90%'}}>
+            <h3 style={{color:'#60a5fa', marginBottom:'1rem'}}>{pendingChoice.message}</h3>
+            <div style={{display:'flex', gap:'10px', flexWrap:'wrap', justifyContent:'center'}}>
+              {pendingChoice.options.map(opt => (
+                <button key={opt} onClick={() => handleChoice(opt)} style={{padding:'10px 20px', background:'#3b82f6', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', textTransform:'capitalize'}}>{opt}</button>
               ))}
             </div>
-            {userAnswer !== null && (
-              <p style={{marginTop: '1rem', textAlign: 'center', color: '#cbd5e1'}}>
-                {selectedQuestion.explanation}
-              </p>
-            )}
+            <button onClick={() => setPendingChoice(null)} style={{marginTop:'20px', background:'transparent', border:'1px solid #ef4444', color:'#ef4444', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Cancelar</button>
           </div>
         </div>
       )}
 
-      {/* Mensajes Flotantes (Toast) */}
+      {selectedQuestion && (
+        <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
+          <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #f59e0b', maxWidth:'500px', width:'90%', textAlign:'center'}}>
+            <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}>❓ {selectedQuestion.question}</h3>
+            <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+              {selectedQuestion.options.map((opt, idx) => (
+                <button key={idx} onClick={() => handleSubmitAnswer(idx)} disabled={userAnswer !== null} style={{padding:'12px', background: userAnswer === idx ? (idx === selectedQuestion.correct ? '#22c55e' : '#ef4444') : '#334155', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold'}}>{opt}</button>
+              ))}
+            </div>
+            {userAnswer !== null && <p style={{marginTop:'1rem'}}>{selectedQuestion.explanation}</p>}
+          </div>
+        </div>
+      )}
+
       {modalMessage && (
-        <div style={{
-          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-          background: modalMessage.includes('❌') ? '#ef4444' : (modalMessage.includes('✅') ? '#22c55e' : '#f59e0b'),
-          color: 'white', padding: '12px 24px', borderRadius: '50px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)', zIndex: 1001, fontWeight: 'bold',
-          display: 'flex', alignItems: 'center', gap: '10px'
-        }}>
-          {modalMessage}
-          <button onClick={() => setModalMessage(null)} style={{background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', marginLeft: '10px'}}>✕</button>
+        <div style={{position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)', background: modalMessage.includes('❌') ? '#ef4444' : (modalMessage.includes('🌟') ? '#8b5cf6' : '#f59e0b'), color:'white', padding:'12px 24px', borderRadius:'50px', zIndex:2000, fontWeight:'bold'}}>
+          {modalMessage} <span onClick={()=>setModalMessage(null)} style={{marginLeft:'10px', cursor:'pointer'}}>✕</span>
         </div>
       )}
     </div>
