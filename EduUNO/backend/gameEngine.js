@@ -1,15 +1,13 @@
 /**
  * gameEngine.js - Motor lógico del juego ReUNOvables
  * Ubicación: EDUUNO/backend/gameEngine.js
- * 
- * ✅ Exporta funciones individuales para usar con require()
- * ✅ Compatible con CommonJS (Node.js tradicional)
  */
 
-// 🔹 Configuración del juego
 const COLORS = ['amarillo', 'azul', 'verde', 'rojo'];
 const RECICLES = ['organico', 'inorganico', 'noreciclable', 'metal'];
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+// Mapeo exacto de tus imágenes
 const RECYCLE_BY_NUMBER_AND_COLOR = {
   1: { amarillo: 'organico', azul: 'organico', verde: 'organico', rojo: 'organico' },
   2: { amarillo: 'organico', azul: 'organico', verde: 'organico', rojo: 'organico' },
@@ -57,20 +55,34 @@ const QUESTIONS = [
     options: ["cambiocolor", "cambioreciclaje", "mascuatro", "saltodereciclaje"],
     correct: 2,
     explanation: "El comodín +4 obliga al siguiente jugador a tomar 4 cartas del mazo."
+  },
+  {
+    id: 5,
+    question: "¿Las botellas de vidrio son reciclables infinitamente?",
+    options: ["Sí", "No, solo 3 veces", "No, se rompen", "Solo si son verdes"],
+    correct: 0,
+    explanation: "El vidrio es 100% reciclable infinitas veces sin perder calidad."
   }
 ];
 
-// 🔹 Crear mazo usando solo combinaciones con imagen disponible (36 normales + 4 comodines = 40 cartas)
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 function createDeck() {
   const deck = [];
   let id = 0;
 
-  // Cartas normales: 9 números × 4 colores con reciclaje definido por los assets existentes.
+  // Cartas normales
   for (const num of NUMBERS) {
     for (const color of COLORS) {
       const recycle = RECYCLE_BY_NUMBER_AND_COLOR[num]?.[color];
       if (!recycle) continue;
-
       deck.push({
         id: `card-${id++}`,
         type: 'normal',
@@ -95,99 +107,104 @@ function createDeck() {
   return shuffle(deck);
 }
 
-// 🔹 Barajar con Fisher-Yates
-function shuffle(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// 🔹 Validar si una carta es jugable
+// 🔹 VALIDACIÓN DE REGLAS (Tu lógica específica)
 function canPlayCard(card, topCard) {
   if (!topCard || !card) return true;
   if (card.type === 'wild') return true;
   
-  // Mismo reciclaje + mismo número
-  if (card.recycle === topCard.recycle && card.number === topCard.number) {
-    return true;
-  }
+  // Regla 1: Mismo reciclaje y mismo número
+  if (card.recycle === topCard.recycle && card.number === topCard.number) return true;
   
-  // Mismo reciclaje + mismo color
-  if (card.recycle === topCard.recycle && card.color === topCard.color) {
-    return true;
-  }
+  // Regla 2: Mismo reciclaje y mismo color
+  if (card.recycle === topCard.recycle && card.color === topCard.color) return true;
   
   return false;
 }
 
-// 🔹 Procesar jugada de carta
-function playCardLogic(gameState, card, playerId) {
-  // Validar turno
+// 🔹 LÓGICA PRINCIPAL DE JUGADA
+function playCard(gameState, card, playerId) {
   if (gameState.currentPlayer !== playerId) {
     return { error: 'No es tu turno' };
   }
 
-  // Validar que la carta esté en la mano
   const playerHand = playerId === 'player' ? gameState.playerHand : gameState.opponentHand;
-  if (!playerHand || !playerHand.some(c => c?.id === card?.id)) {
-    return { error: 'Carta no está en tu mano' };
+  const cardIndex = playerHand.findIndex(c => c?.id === card?.id);
+  
+  if (cardIndex === -1) return { error: 'Carta no encontrada en tu mano' };
+
+  // Validar reglas
+  if (!canPlayCard(card, gameState.topCard)) {
+    return { error: 'Movimiento inválido. Debe coincidir reciclaje+número o reciclaje+color (o ser comodín).' };
   }
 
-  // Validar regla de juego
-  if (!canPlayCard(card, gameState.topCard) && card?.type !== 'wild') {
-    return { error: 'Carta no válida para jugar' };
+  // Ejecutar jugada
+  const newHand = [...playerHand];
+  newHand.splice(cardIndex, 1);
+
+  let nextPlayer = playerId === 'player' ? 'opponent' : 'player';
+  let message = `${playerId} jugó ${card.name}`;
+  let effects = {};
+
+  // Efectos de Comodines
+  if (card.type === 'wild') {
+    if (card.effect === 'drawFour') {
+      const victimHandKey = nextPlayer === 'player' ? 'playerHand' : 'opponentHand';
+      const victimHand = gameState[victimHandKey];
+      const cardsToDraw = gameState.deck.slice(0, 4);
+      
+      if (cardsToDraw.length > 0) {
+        effects[victimHandKey] = [...victimHand, ...cardsToDraw];
+        effects.deck = gameState.deck.slice(4);
+        message += " ¡+4 Cartas!";
+      }
+    } else if (card.effect === 'skipRecycle') {
+      nextPlayer = playerId; // Repite turno
+      message += " ¡Salto de turno!";
+    } else {
+      message += " ¡Cambio especial!";
+    }
   }
 
-  // Remover carta de la mano
-  const newHand = playerHand.filter(c => c?.id !== card?.id);
+  // Resetear contador de robos si se jugó carta
+  effects.consecutiveDraws = 0;
 
-  // 🔹 Verificar victoria
+  // Verificar Victoria
   if (newHand.length === 0) {
     return {
       ...gameState,
-      [playerId === 'player' ? 'playerHand' : 'opponentHand']: newHand,
-      discardPile: [...(gameState.discardPile || []), card],
+      ...effects,
+      [playerId === 'player' ? 'playerHand' : 'opponentHand']: [],
       topCard: card,
+      discardPile: [...(gameState.discardPile || []), card],
       status: 'gameOver',
       winner: playerId,
-      lastAction: `${playerId} jugó ${card?.name || 'carta'} y ¡GANÓ!`
+      lastAction: `🏆 ¡${playerId.toUpperCase()} GANA LA PARTIDA!`,
+      currentPlayer: nextPlayer
     };
   }
 
-  // 🔹 Aplicar efectos de comodines (simplificado)
-  let newTopCard = card;
-  if (card?.type === 'wild') {
-    newTopCard = { 
-      ...card, 
-      color: gameState.topCard?.color || 'amarillo',
-      recycle: gameState.topCard?.recycle || 'organico'
-    };
+  // Alerta "¡RECICLA!"
+  if (newHand.length === 1) {
+    message += " → ¡RECICLA!";
   }
 
-  // 🔹 Actualizar estado
   return {
     ...gameState,
+    ...effects,
     [playerId === 'player' ? 'playerHand' : 'opponentHand']: newHand,
+    topCard: card,
     discardPile: [...(gameState.discardPile || []), card],
-    topCard: newTopCard,
-    currentPlayer: playerId === 'player' ? 'opponent' : 'player',
-    drawnCards: 0,
-    lastAction: `${playerId} jugó ${card?.name || 'carta'}`
+    currentPlayer: nextPlayer,
+    lastAction: message
   };
 }
 
-// 🔹 Robar carta del mazo
 function drawCardLogic(gameState, playerId) {
   if (!gameState.deck || gameState.deck.length === 0) {
-    // 🔹 Regenerar mazo desde descarte si está vacío
     if (gameState.discardPile && gameState.discardPile.length > 1) {
       const topCard = gameState.discardPile[0];
       const cardsToShuffle = gameState.discardPile.slice(1);
       const newDeck = shuffle(cardsToShuffle);
-      
       return {
         ...gameState,
         deck: newDeck,
@@ -195,40 +212,31 @@ function drawCardLogic(gameState, playerId) {
         lastAction: '🔄 Mazo regenerado desde descarte'
       };
     }
-    return { error: 'Mazo vacío y sin cartas para regenerar' };
+    return { error: 'Mazo vacío' };
   }
 
-  // Extraer carta del mazo
   const [drawnCard, ...restDeck] = gameState.deck;
-  
-  // Agregar a la mano del jugador
-  const currentHand = playerId === 'player' ? gameState.playerHand : gameState.opponentHand;
-  const newHand = [...(currentHand || []), drawnCard];
-
-  const newDrawnCount = (gameState.drawnCards || 0) + 1;
+  const currentHand = gameState[playerId === 'player' ? 'playerHand' : 'opponentHand'];
+  const newHand = [...currentHand, drawnCard];
 
   return {
     ...gameState,
     [playerId === 'player' ? 'playerHand' : 'opponentHand']: newHand,
     deck: restDeck,
-    drawnCards: newDrawnCount,
-    lastAction: `${playerId} robó ${drawnCard?.name || 'una carta'}`
+    lastAction: `${playerId} robó una carta`
   };
 }
 
-// 🔹 Generar pregunta aleatoria
 function generateQuestion() {
   const randomIndex = Math.floor(Math.random() * QUESTIONS.length);
   return { ...QUESTIONS[randomIndex] };
 }
 
-// 🔹 Validar respuesta
 function validateAnswer(questionId, selectedOption) {
   const question = QUESTIONS.find(q => q.id === questionId);
   if (!question) return { error: 'Pregunta no encontrada' };
   
   const isCorrect = selectedOption === question.correct;
-  
   return {
     correct: isCorrect,
     explanation: question.explanation,
@@ -236,19 +244,12 @@ function validateAnswer(questionId, selectedOption) {
   };
 }
 
-// 🔹 Exportar funciones para usar con require()
 module.exports = {
   createDeck,
   canPlayCard,
-  playCardLogic,
+  playCard,
   drawCardLogic,
   generateQuestion,
   validateAnswer,
-  // Constants también disponibles si se necesitan
-  COLORS,
-  RECICLES,
-  NUMBERS,
-  WILD_CARDS,
-  QUESTIONS,
-  RECYCLE_BY_NUMBER_AND_COLOR
+  COLORS, RECICLES, NUMBERS, WILD_CARDS, QUESTIONS, RECYCLE_BY_NUMBER_AND_COLOR
 };
