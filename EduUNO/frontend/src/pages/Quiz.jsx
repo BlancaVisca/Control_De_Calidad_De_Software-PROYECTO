@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { preguntasMath } from "../data/preguntasMath";
@@ -10,6 +10,8 @@ import "../css/quiz.css";
 const correctSound = new Audio('/sounds/correcto.mp3');
 const wrongSound = new Audio('/sounds/equivocacion.mp3');
 const clickSound = new Audio('/sounds/boton.mp3');
+const goodResultSound = new Audio('/sounds/retro_buena.mp3');
+const badResultSound = new Audio('/sounds/retro_mala.mp3');
 
 export default function Quiz() {
   const navigate = useNavigate();
@@ -42,7 +44,7 @@ export default function Quiz() {
     newAnswers[currentIndex] = index;
     setAnswers(newAnswers);
 
-    // 🔊 VALIDAR INMEDIATO
+    // 🔊 sonido inmediato
     if (index === currentQuestion.correct) {
       correctSound.currentTime = 0;
       correctSound.play();
@@ -90,6 +92,19 @@ export default function Quiz() {
 
   const passed = score >= 4;
 
+  // 🔥 SONIDO FINAL (SOLO UNA VEZ)
+  useEffect(() => {
+    if (finished) {
+      if (passed) {
+        goodResultSound.currentTime = 0;
+        goodResultSound.play();
+      } else {
+        badResultSound.currentTime = 0;
+        badResultSound.play();
+      }
+    }
+  }, [finished]);
+
   return (
     <div className={`quiz-container ${theme}`}>
 
@@ -132,7 +147,6 @@ export default function Quiz() {
               ))}
             </div>
 
-            {/* CONTROLES */}
             <div className="quiz-card-controls">
 
               <button
