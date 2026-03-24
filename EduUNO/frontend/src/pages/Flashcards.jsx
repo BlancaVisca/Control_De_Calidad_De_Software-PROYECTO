@@ -4,6 +4,10 @@ import { flashcardsData } from "../data/flashcardsData";
 import { flashcardsDataMath } from "../data/flashcardsDataMath";
 import { useNavigate, useLocation } from "react-router-dom";
 
+// 🔊 AUDIOS
+const flipSound = new Audio('/sounds/flash.mp3');
+const clickSound = new Audio('/sounds/boton.mp3');
+
 export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -74,7 +78,11 @@ export default function Flashcards() {
       <main className="main-content">
         <div
           className="flashcard-container"
-          onClick={() => setFlipped(!flipped)}
+          onClick={() => {
+            flipSound.currentTime = 0;
+            flipSound.play();
+            setFlipped(!flipped);
+          }}
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
 
@@ -118,12 +126,23 @@ export default function Flashcards() {
       {/* CONTROLES */}
       <div className="navigation-controls">
 
-        <button onClick={prevCard} disabled={currentIndex === 0}>
+        <button
+          onClick={() => {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            prevCard();
+          }}
+          disabled={currentIndex === 0}
+        >
           &lt; Anterior
         </button>
 
         <button
-          onClick={nextCard}
+          onClick={() => {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            nextCard();
+          }}
           disabled={currentIndex === data.length - 1}
         >
           Siguiente &gt;
@@ -131,7 +150,11 @@ export default function Flashcards() {
 
         <button
           className="back-menu-btn"
-          onClick={() => navigate("/menu")}
+          onClick={() => {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            navigate("/menu");
+          }}
         >
           &larr; Volver al menú
         </button>
@@ -143,7 +166,11 @@ export default function Flashcards() {
         <div className="quiz-start-container">
           <button
             className="quiz-start-btn"
-            onClick={goQuiz}
+            onClick={() => {
+              clickSound.currentTime = 0;
+              clickSound.play();
+              goQuiz();
+            }}
           >
             Iniciar cuestionario →
           </button>

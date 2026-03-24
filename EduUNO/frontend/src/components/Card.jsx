@@ -1,8 +1,11 @@
 /**
- * Card.jsx - Componente de carta individual
+ * Card.jsx - Componente de carta individual musicalizado
  */
 
 import PropTypes from "prop-types";
+
+// --- AUDIO (Ana) ---
+const sfxFlash = new Audio('/sounds/flash.mp3');
 
 export default function Card({
   card,
@@ -13,14 +16,23 @@ export default function Card({
 }) {
   const isClickable = onClick && !disabled;
 
-  // 🔴 Carta volteada
+  // Función para manejar el clic y el sonido (Ana)
+  const handleCardClick = (e) => {
+    if (isClickable) {
+      sfxFlash.currentTime = 0; // Reinicia el sonido por si el usuario hace clics rápidos
+      sfxFlash.play().catch(err => console.log("Audio esperando interacción"));
+      onClick(e); // Ejecuta la función original del juego
+    }
+  };
+
+  // 🔴 Carta volteada (Mazo o mano del oponente)
   if (hidden || card?.type === "hidden") {
     return (
       <img
         src="/img/atras.jpg"
         alt="Reverso de carta"
         className="card-img"
-        onClick={isClickable ? onClick : undefined}
+        onClick={handleCardClick}
         draggable={false}
         loading="lazy"
       />
@@ -35,7 +47,7 @@ export default function Card({
         alt={card.description || card.name}
         title={card.description || card.name}
         className={`card-img ${isPlayable ? "playable" : ""}`}
-        onClick={isClickable ? onClick : undefined}
+        onClick={handleCardClick}
         draggable={false}
         loading="lazy"
         onError={(e) => {
@@ -60,7 +72,7 @@ export default function Card({
         alt={cardName}
         title={cardName}
         className={`card-img ${isPlayable ? "playable" : ""}`}
-        onClick={isClickable ? onClick : undefined}
+        onClick={handleCardClick}
         draggable={false}
         loading="lazy"
         onError={(e) => {

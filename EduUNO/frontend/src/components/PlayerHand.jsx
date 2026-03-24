@@ -38,15 +38,23 @@ export default function PlayerHand({
         
         const cardKey = card?.id || `player-card-${index}-${card?.name || 'unknown'}`;
         
-        return (
-          <Card
-            key={cardKey}
-            card={card}
-            onClick={playable ? () => onPlay(card) : undefined}
-            disabled={!isTurn || !playable || isProcessing}
-            isPlayable={playable}
-          />
-        );
+       return (
+      <Card
+        key={cardKey}
+        card={card}
+        // Ahora siempre mandamos una función para que el sonido se active:
+        onClick={() => {
+          if (playable) {
+            onPlay(card);
+          } else {
+            console.log("Esta carta no se puede jugar, pero el sonido debería sonar.");
+          }
+        }}
+        // Quitamos el disabled total para que el clic llegue al componente Card
+        disabled={isProcessing} 
+        isPlayable={playable}
+      />
+    );
       })}
     </section>
   );

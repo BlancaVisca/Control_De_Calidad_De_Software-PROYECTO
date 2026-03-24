@@ -6,6 +6,11 @@ import { preguntasRec } from "../data/preguntasRec";
 
 import "../css/quiz.css";
 
+// 🔊 AUDIOS
+const correctSound = new Audio('/sounds/correcto.mp3');
+const wrongSound = new Audio('/sounds/equivocacion.mp3');
+const clickSound = new Audio('/sounds/boton.mp3');
+
 export default function Quiz() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,11 +41,23 @@ export default function Quiz() {
     const newAnswers = [...answers];
     newAnswers[currentIndex] = index;
     setAnswers(newAnswers);
+
+    // 🔊 VALIDAR INMEDIATO
+    if (index === currentQuestion.correct) {
+      correctSound.currentTime = 0;
+      correctSound.play();
+    } else {
+      wrongSound.currentTime = 0;
+      wrongSound.play();
+    }
   };
 
   /* ===== SIGUIENTE ===== */
   const nextQuestion = () => {
     if (selected === null) return;
+
+    clickSound.currentTime = 0;
+    clickSound.play();
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -51,6 +68,9 @@ export default function Quiz() {
 
   /* ===== REGRESAR ===== */
   const prevQuestion = () => {
+    clickSound.currentTime = 0;
+    clickSound.play();
+
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
@@ -112,7 +132,7 @@ export default function Quiz() {
               ))}
             </div>
 
-            {/* CONTROLES DENTRO DEL CARD */}
+            {/* CONTROLES */}
             <div className="quiz-card-controls">
 
               <button
@@ -151,18 +171,22 @@ export default function Quiz() {
 
               <button
                 className="quiz-btn primary"
-                onClick={() =>
-                  navigate("/gameR", { state: { theme } })
-                }
+                onClick={() => {
+                  clickSound.currentTime = 0;
+                  clickSound.play();
+                  navigate("/gameR", { state: { theme } });
+                }}
               >
                 Ir al juego
               </button>
 
               <button
                 className="quiz-btn secondary"
-                onClick={() =>
-                  navigate("/flashcards", { state: { theme } })
-                }
+                onClick={() => {
+                  clickSound.currentTime = 0;
+                  clickSound.play();
+                  navigate("/flashcards", { state: { theme } });
+                }}
               >
                 Ver flashcards
               </button>
@@ -174,7 +198,7 @@ export default function Quiz() {
 
       </main>
 
-      {/* PROGRESO CIRCULOS */}
+      {/* PROGRESO */}
       {!finished && (
         <div className="quiz-pagination">
           {questions.map((_, index) => (

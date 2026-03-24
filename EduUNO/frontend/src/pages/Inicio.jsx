@@ -2,6 +2,8 @@ import "../css/inicio.css";
 import { useNavigate } from "react-router-dom";
 import inicioImg from "../assets/inicio.png";
 
+const clickSound = new Audio('/sounds/boton.mp3');
+
 export default function Inicio() {
   const navigate = useNavigate();
 
@@ -21,7 +23,11 @@ export default function Inicio() {
 
       <button 
         className="inicio-btn"
-        onClick={() => navigate("/menu")}
+        onClick={() => {
+          clickSound.currentTime = 0;
+          clickSound.play();
+          navigate("/menu");
+        }}
       >
         ▶ JUGAR AHORA 
       </button>
