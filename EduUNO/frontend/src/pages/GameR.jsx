@@ -66,7 +66,7 @@ export default function GameR() {
     if (game.reason === 'empty_deck') {
       subTitle = game.endMessageSub || "Partida finalizada, el mazo se ha quedado sin cartas";
       if (game.winner === 'player') {
-        title = "🎉 ¡GANASTE!";
+        title = "¡GANASTE!";
         color = "#4ade80";
         borderColor = "rgba(34, 197, 94, 0.5)";
         shadowColor = "rgba(34, 197, 94, 0.35)";
@@ -156,7 +156,7 @@ export default function GameR() {
         setGame(data);
         setPendingChoice(null);
         if (data.freePlay) setModalMessage("🌟 ¡MODO LIBRE!");
-        else if (data.lastAction.includes("¡RECICLA!")) setModalMessage("⚠️ ¡RECICLA!");
+        else if (data.lastAction.includes("¡RECICLA!")) setModalMessage("¡RECICLA!");
       }
     } catch (err) { console.error(err); }
   };
@@ -219,7 +219,7 @@ export default function GameR() {
       // 2. Preparamos el mensaje
       let msg = "";
       if (data.questionResult === 'success') {
-        msg = "✅ ¡Correcto! 🌟 MODO LIBRE ACTIVADO.";
+        msg = "✅ ¡Correcto!  MODO LIBRE ACTIVADO.";
       } else {
         // Aquí es donde el servidor dice cuántas vidas quedan
         const vidasRestantes = data.lives; 
@@ -256,7 +256,7 @@ export default function GameR() {
 
   return (
     <div className="game-container">
-      {/* 🔥 GameHUD recibe game.lives directamente. Si game se actualiza, esto cambia. */}
+      {/* GameHUD recibe game.lives directamente. Si game se actualiza, esto cambia. */}
       <GameHUD 
         deckCount={game.deck.length} 
         lives={game.lives} 

@@ -62,7 +62,7 @@ app.post("/play", (req, res) => {
 app.post("/draw", (req, res) => {
   let resState = drawCardLogic(gameState, "player");
   
-  // 🔥 DETECCIÓN DE MAZO VACÍO FINAL (SIN REGENERACIÓN)
+  // DETECCIÓN DE MAZO VACÍO FINAL (SIN REGENERACIÓN)
   if (resState.error === "MAZO_VACIO_FINAL") {
     return handleEmptyDeckGameOver(res);
   }
@@ -80,7 +80,7 @@ app.post("/draw", (req, res) => {
   res.json(gameState);
 });
 
-// 🔥 FUNCIÓN PARA MANEJAR FIN POR MAZO VACÍO
+// FUNCIÓN PARA MANEJAR FIN POR MAZO VACÍO
 function handleEmptyDeckGameOver(res) {
   const playerCount = gameState.playerHand.length;
   const opponentCount = gameState.opponentHand.length;
@@ -106,7 +106,7 @@ function handleEmptyDeckGameOver(res) {
   gameState.reason = 'empty_deck';
   // Mensaje compuesto para el frontend
   gameState.lastAction = messageTitle; 
-  gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin carta";
+  gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
   
   return res.json(gameState);
 }
@@ -159,7 +159,7 @@ app.post("/answer-question", (req, res) => {
 app.post("/check-question-usage", (req, res) => {
    if (gameState.freePlay) {
        gameState.lives -= 1;
-       gameState.lastAction = "⚠️ ¡Uso indebido del comodín! Pierdes 1 vida.";
+       gameState.lastAction = "¡Uso indebido del comodín! Pierdes 1 vida.";
        if (gameState.lives <= 0) {
           gameState.status = 'gameOver';
           gameState.winner = 'opponent';
