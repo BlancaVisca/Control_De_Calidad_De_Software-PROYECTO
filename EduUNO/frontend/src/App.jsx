@@ -8,7 +8,7 @@ import Quiz from "./pages/Quiz";
 
 function App() {
   useEffect(() => {
-    const MANDO_URL = "http://10.131.103.26/joystick";
+    const MANDO_URL = "http://172.20.48.26/joystick";
     let isProcessing = false; // "Seguro" para evitar peticiones simultáneas
 
     const EscanearMando = setInterval(async () => {
