@@ -2,6 +2,14 @@ import "../css/styles.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// 🔊 SONIDO
+const soundButton = new Audio("/sounds/boton.mp3");
+
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Menu() {
   const [selectedTheme, setSelectedTheme] = useState("");
   const [error, setError] = useState("");
@@ -53,11 +61,17 @@ export default function Menu() {
 
         {error && <div className="error-message">{error}</div>}
 
-        <button className="btn-primary" onClick={startGame}>
+        <button className="btn-primary" onClick={() => {
+  playSound(soundButton);
+  startGame();
+}}>
           INICIAR JUEGO →
         </button>
 
-        <button className="btn-secondary" onClick={goFlashcards}>
+        <button className="btn-secondary" onClick={() => {
+  playSound(soundButton);
+  goFlashcards();
+}}>
            VER FLASHCARDS
         </button>
 

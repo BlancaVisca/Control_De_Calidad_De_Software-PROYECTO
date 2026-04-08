@@ -4,6 +4,16 @@ import { flashcardsData } from "../data/flashcardsData";
 import { flashcardsDataMath } from "../data/flashcardsDataMath";
 import { useNavigate, useLocation } from "react-router-dom";
 
+// 🔊 SONIDOS
+const soundFlip = new Audio("/sounds/flash.mp3");
+const soundButton = new Audio("/sounds/boton.mp3");
+
+// 🔊 helper
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -25,6 +35,7 @@ export default function Flashcards() {
   /* ===== NAVEGACION ===== */
   const nextCard = () => {
     if (currentIndex < data.length - 1) {
+      playSound(soundButton);
       setCurrentIndex(currentIndex + 1);
       setFlipped(false);
     }
@@ -32,13 +43,16 @@ export default function Flashcards() {
 
   const prevCard = () => {
     if (currentIndex > 0) {
+      playSound(soundButton);
       setCurrentIndex(currentIndex - 1);
       setFlipped(false);
     }
   };
 
   /* ===== IR AL QUIZ ===== */
+ 
   const goQuiz = () => {
+    playSound(soundButton); // 🔊 sonido botón
     navigate("/quiz", { state: { theme } });
   };
 
@@ -74,7 +88,12 @@ export default function Flashcards() {
       <main className="main-content">
         <div
           className="flashcard-container"
-          onClick={() => setFlipped(!flipped)}
+          
+        onClick={() => {
+          playSound(soundFlip);
+          setFlipped(!flipped);
+        }}
+
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
 
@@ -131,7 +150,12 @@ export default function Flashcards() {
 
         <button
           className="back-menu-btn"
-          onClick={() => navigate("/menu")}
+         
+          onClick={() => {
+          playSound(soundButton);
+          navigate("/menu");
+        }}
+
         >
           &larr; Volver al menú
         </button>

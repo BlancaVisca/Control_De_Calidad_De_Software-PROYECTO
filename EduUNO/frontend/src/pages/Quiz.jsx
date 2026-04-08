@@ -6,6 +6,17 @@ import { preguntasRec } from "../data/preguntasRec";
 
 import "../css/quiz.css";
 
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundSuccess = new Audio("/sounds/correcto.mp3");
+const soundFail = new Audio("/sounds/equivocacion.mp3");
+
+// 🔊 helper
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Quiz() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +41,7 @@ export default function Quiz() {
 
   const currentQuestion = questions[currentIndex];
   const selected = answers[currentIndex];
+  const passed = score >= 4;
 
   /* ===== SELECCIONAR ===== */
   const selectOption = (index) => {
@@ -39,36 +51,49 @@ export default function Quiz() {
   };
 
   /* ===== SIGUIENTE ===== */
-  const nextQuestion = () => {
-    if (selected === null) return;
+  
+    const nextQuestion = () => {
+      if (selected === null) return;
 
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      finishQuiz();
-    }
-  };
+      playSound(soundButton);
+
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        finishQuiz();
+      }
+    };
 
   /* ===== REGRESAR ===== */
-  const prevQuestion = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
+
+const prevQuestion = () => {
+  if (currentIndex > 0) {
+    playSound(soundButton);
+    setCurrentIndex(currentIndex - 1);
+  }
+};
 
   /* ===== TERMINAR ===== */
+
   const finishQuiz = () => {
-    let correctCount = 0;
+  let correctCount = 0;
 
-    answers.forEach((ans, i) => {
-      if (ans === questions[i].correct) correctCount++;
-    });
+  answers.forEach((ans, i) => {
+    if (ans === questions[i].correct) correctCount++;
+  });
 
-    setScore(correctCount);
-    setFinished(true);
-  };
+  setScore(correctCount);
+  setFinished(true);
 
-  const passed = score >= 4;
+  // 🔊 retrasamos el sonido para no romper render
+  setTimeout(() => {
+    if (correctCount >= 4) {
+      playSound(soundSuccess);
+    } else {
+      playSound(soundFail);
+    }
+  }, 100);
+};
 
   return (
     <div className={`quiz-container ${theme}`}>
@@ -105,7 +130,12 @@ export default function Quiz() {
                   className={`quiz-option ${
                     selected === i ? "selected" : ""
                   }`}
-                  onClick={() => selectOption(i)}
+                 
+                onClick={() => {
+                  playSound(soundButton);
+                  selectOption(i);
+                }}
+
                 >
                   {opt}
                 </button>
