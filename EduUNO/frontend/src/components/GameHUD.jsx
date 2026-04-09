@@ -15,7 +15,7 @@ export default function GameHUD({
 }) {
   
   return (
-    <header className="game-hud" role="banner" aria-label="Panel de información del juego">
+    <header className="top-panel" role="banner" aria-label="Panel de información del juego">
       
       {/* ❤️ VIDAS 
           🔥 CLAVE: Agregamos key={lives} para forzar a React a repaintear cuando cambia el número */}

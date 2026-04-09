@@ -182,7 +182,9 @@ const prevQuestion = () => {
               <button
                 className="quiz-btn primary"
                 onClick={() =>
-                  navigate("/gameR", { state: { theme } })
+                  navigate(theme === "math" ? "/gameM" : "/gameR", {
+                    state: { theme }
+                  })
                 }
               >
                 Ir al juego

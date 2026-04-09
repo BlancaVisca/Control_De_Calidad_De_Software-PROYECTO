@@ -24,18 +24,24 @@ export default function Menu() {
     return true;
   };
 
+  // 🔥 CORRECCIÓN AQUÍ
   const startGame = () => {
     if (!validate()) return;
-    navigate("/gameR");
+
+    if (selectedTheme === "math") {
+      navigate("/gameM");
+    } else {
+      navigate("/gameR");
+    }
   };
 
   const goFlashcards = () => {
-  if (!validate()) return;
+    if (!validate()) return;
 
-  navigate("/flashcards", {
-    state: { theme: selectedTheme }
-  });
-};
+    navigate("/flashcards", {
+      state: { theme: selectedTheme }
+    });
+  };
 
   return (
     <div className="home-bg">
@@ -46,33 +52,39 @@ export default function Menu() {
 
         <h2 className="theme-title">Selecciona un tema:</h2>
 
-      <select
-        className={`theme-dropdown ${error ? "input-error" : ""}`}
-        value={selectedTheme}
-        onChange={(e) => setSelectedTheme(e.target.value)}
-      >
-        <option value="" disabled hidden>
-          Selecciona un tema...
-        </option>
+        <select
+          className={`theme-dropdown ${error ? "input-error" : ""}`}
+          value={selectedTheme}
+          onChange={(e) => setSelectedTheme(e.target.value)}
+        >
+          <option value="" disabled hidden>
+            Selecciona un tema...
+          </option>
 
-        <option value="recycling">Separación de residuos</option>
-        <option value="math">Matemáticas</option>
-      </select>
+          <option value="recycling">Separación de residuos</option>
+          <option value="math">Matemáticas</option>
+        </select>
 
         {error && <div className="error-message">{error}</div>}
 
-        <button className="btn-primary" onClick={() => {
-  playSound(soundButton);
-  startGame();
-}}>
+        <button
+          className="btn-primary"
+          onClick={() => {
+            playSound(soundButton);
+            startGame();
+          }}
+        >
           INICIAR JUEGO →
         </button>
 
-        <button className="btn-secondary" onClick={() => {
-  playSound(soundButton);
-  goFlashcards();
-}}>
-           VER FLASHCARDS
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            playSound(soundButton);
+            goFlashcards();
+          }}
+        >
+          VER FLASHCARDS
         </button>
 
       </div>

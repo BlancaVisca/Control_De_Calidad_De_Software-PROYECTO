@@ -8,7 +8,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 const soundFlip = new Audio("/sounds/flash.mp3");
 const soundButton = new Audio("/sounds/boton.mp3");
 
-// 🔊 helper
 const playSound = (sound) => {
   sound.currentTime = 0;
   sound.play();
@@ -21,16 +20,81 @@ export default function Flashcards() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* ===== RECIBIR THEME ===== */
+  /* ===== THEME ===== */
   const theme = location.state?.theme || "recycling";
 
-  /* ===== SELECCIONAR DATA ===== */
+  /* ===== DATA ===== */
   const data =
     theme === "math"
       ? flashcardsDataMath
       : flashcardsData;
 
   const card = data[currentIndex];
+
+  /* ===== GRAFICAS DINAMICAS ===== */
+  useEffect(() => {
+    const canvas = document.getElementById(`graph-${currentIndex}`);
+    if (!canvas || !card.graph) return;
+
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Ejes
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.moveTo(w / 2, 0);
+    ctx.lineTo(w / 2, h);
+    ctx.strokeStyle = "#888";
+    ctx.stroke();
+
+    ctx.strokeStyle = "red";
+
+    /* ===== LINEAL ===== */
+    if (card.graph.type === "linear") {
+      const { m, b } = card.graph;
+
+      ctx.beginPath();
+      for (let x = -10; x <= 10; x++) {
+        let y = m * x + b;
+        let px = w / 2 + x * 10;
+        let py = h / 2 - y * 10;
+
+        if (x === -10) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    /* ===== PARABOLA ===== */
+    if (card.graph.type === "parabola") {
+      const { a } = card.graph;
+
+      ctx.beginPath();
+      for (let x = -10; x <= 10; x++) {
+        let y = a * x * x;
+        let px = w / 2 + x * 10;
+        let py = h / 2 - y * 5;
+
+        if (x === -10) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    /* ===== CIRCULO ===== */
+    if (card.graph.type === "circle") {
+      const { r } = card.graph;
+
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, r * 20, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+  }, [currentIndex, flipped, card]);
 
   /* ===== NAVEGACION ===== */
   const nextCard = () => {
@@ -49,10 +113,9 @@ export default function Flashcards() {
     }
   };
 
-  /* ===== IR AL QUIZ ===== */
- 
+  /* ===== QUIZ ===== */
   const goQuiz = () => {
-    playSound(soundButton); // 🔊 sonido botón
+    playSound(soundButton);
     navigate("/quiz", { state: { theme } });
   };
 
@@ -67,8 +130,8 @@ export default function Flashcards() {
   return (
     <div className={`container ${theme}`}>
 
+      {/* HEADER */}
       <header className="header">
-
         <h1 className="header-title">
           {theme === "math"
             ? "Aprende Matemáticas"
@@ -82,28 +145,36 @@ export default function Flashcards() {
         <span className="instruction">
           (Da click sobre la tarjeta)
         </span>
-
       </header>
 
+      {/* MAIN */}
       <main className="main-content">
         <div
           className="flashcard-container"
-          
-        onClick={() => {
-          playSound(soundFlip);
-          setFlipped(!flipped);
-        }}
-
+          onClick={() => {
+            playSound(soundFlip);
+            setFlipped(!flipped);
+          }}
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
 
             {/* FRONT */}
             <div className="flashcard-front">
               <h2 className="card-title">{card.title}</h2>
+
               <p className="card-definition">{card.definition}</p>
 
+              {/* GRAFICA EN FRONT */}
+              {card.graph && (
+                <canvas
+                  id={`graph-${currentIndex}`}
+                  width="250"
+                  height="250"
+                ></canvas>
+              )}
+
               <div className="curiosity-box">
-                <h3>¿Sabías que...?</h3>
+                <h3>Ejemplo</h3>
                 <p>{card.curiosity}</p>
               </div>
             </div>
@@ -150,19 +221,17 @@ export default function Flashcards() {
 
         <button
           className="back-menu-btn"
-         
           onClick={() => {
-          playSound(soundButton);
-          navigate("/menu");
-        }}
-
+            playSound(soundButton);
+            navigate("/menu");
+          }}
         >
           &larr; Volver al menú
         </button>
 
       </div>
 
-      {/* BOTON QUIZ SOLO EN LA ULTIMA TARJETA */}
+      {/* QUIZ */}
       {currentIndex === data.length - 1 && (
         <div className="quiz-start-container">
           <button

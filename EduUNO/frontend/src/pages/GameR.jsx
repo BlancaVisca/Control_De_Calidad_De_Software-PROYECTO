@@ -1,29 +1,9 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Card from "../components/Card";
 import OpponentHand from "../components/OpponentHand";
 import PlayerHand from "../components/PlayerHand";
 import GameHUD from "../components/GameHUD";
 import "../css/game.css";
-
-// 🔊 SONIDOS
-const soundFlash = new Audio("/sounds/flash.mp3");
-const soundButton = new Audio("/sounds/boton.mp3");
-const soundWrong = new Audio("/sounds/retro_mala.mp3");
-
-// 🔊 CONTROL DE SONIDO (evita que se encimen)
-let currentAudio = null;
-
-const playSound = (sound) => {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.currentTime = 0;
-  }
-
-  sound.currentTime = 0;
-  sound.play();
-
-  currentAudio = sound;
-};
 
 export default function GameR() {
   const [game, setGame] = useState(null);
@@ -32,7 +12,6 @@ export default function GameR() {
   const [userAnswer, setUserAnswer] = useState(null);
   const [modalMessage, setModalMessage] = useState(null);
   const [pendingChoice, setPendingChoice] = useState(null);
-  const prevLives = useRef(null);
 
   useEffect(() => {
     fetch("http://localhost:3005/start", { method: "POST" })
@@ -53,16 +32,6 @@ export default function GameR() {
     }, 1000);
     return () => clearInterval(interval);
   }, [game?.currentPlayer, game?.status]);
-
-  useEffect(() => {
-  if (!game) return;
-
-  if (prevLives.current !== null && game.lives < prevLives.current) {
-    playSound(soundWrong); // 🔊 sonido cuando pierdes vida
-  }
-
-  prevLives.current = game.lives;
-}, [game?.lives]);
 
   if (loading || !game) return <div className="loading-screen"><h1>Cargando...</h1></div>;
 
@@ -148,19 +117,7 @@ export default function GameR() {
               <span style={{ color: '#f472b6' }}>🤖 Oponente: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.opponentHand.length}</strong></span>
             </div>
           )}
-                  <button 
-          onClick={() => {
-            const audio = new Audio("/sounds/boton.mp3");
-            audio.play(); 
-
-            setTimeout(() => {
-              window.location.reload();
-            }, 200);
-          }} 
-          style={{ padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer' }}
-        >
-          🔄 Jugar de nuevo
-        </button>
+          <button onClick={() => window.location.reload()} style={{ padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
           <div style={{ marginTop: '35px', paddingTop: '25px', borderTop: `1px solid ${borderColor}`, opacity: 0.5, fontSize: '0.9rem', color: '#64748b', letterSpacing: '1px' }}>
             <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
           </div>
@@ -171,7 +128,6 @@ export default function GameR() {
   }
 
   const handlePlayCard = async (card) => {
-    playSound(soundFlash);  
     if (game.currentPlayer !== 'player') return;
     try {
       const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
@@ -207,7 +163,6 @@ export default function GameR() {
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
-    playSound(soundFlash);
     const res = await fetch("http://localhost:3005/draw", { method: "POST" });
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
@@ -218,38 +173,30 @@ export default function GameR() {
     }
   };
 
-const handleOpenQuestion = async () => {
-  if (game.currentPlayer !== 'player') return;
-
-  playSound(soundButton); // 🔊 sonido SIEMPRE primero
-
-  setTimeout(async () => {
+  const handleOpenQuestion = async () => {
+    if (game.currentPlayer !== 'player') return;
     if (game.freePlay) {
-      const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
-      const data = await res.json();
-      if (data.status === 'gameOver') { setGame(data); return; }
-      setGame(data);
-      setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
-      return;
+       const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
+       const data = await res.json();
+       if (data.status === 'gameOver') { setGame(data); return; }
+       setGame(data);
+       setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
+       return;
     }
-
     const res = await fetch("http://localhost:3005/question");
     const data = await res.json();
-
     if (data.status === 'gameOver') { setGame(data); return; }
-
     if (data.error) {
-      setModalMessage(data.error);
+      if (data.error.includes("Sin preguntas")) setModalMessage("Has perdido intentalo de nuevo");
+      else setModalMessage(data.error);
     } else {
       setSelectedQuestion(data);
       setUserAnswer(null);
     }
-  }, 80);
-};
+  };
 
   // 🔥 CORRECCIÓN CRÍTICA AQUÍ: Actualización forzosa de vidas
   const handleSubmitAnswer = async (optionIndex) => {
-    playSound(soundButton);
     if (!selectedQuestion) return;
     setUserAnswer(optionIndex);
     

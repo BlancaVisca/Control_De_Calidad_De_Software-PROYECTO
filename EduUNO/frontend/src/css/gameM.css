@@ -1,0 +1,366 @@
+/**
+ * gameM.css - Estilos para juego de Matemáticas
+ * Estilo: matemático moderno (morado + cian + neón)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+======================================== */
+.game-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+
+  background:
+    radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.25), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(34, 211, 238, 0.25), transparent 45%),
+    linear-gradient(160deg, #020617, #0f172a 60%, #020617);
+
+  font-family: 'Inter', sans-serif;
+  color: #e2e8f0;
+  overflow-y: auto;
+}
+
+/* =========================
+   PANEL SUPERIOR
+========================= */
+.top-panel {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* =========================
+   ZONA CENTRAL
+========================= */
+.center-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ========================================
+   CARTAS
+======================================== */
+.card-img {
+  width: 80px;
+  height: 110px;
+  object-fit: contain;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Hover matemático */
+.card-img:hover {
+  transform: translateY(-8px) scale(1.06);
+  box-shadow:
+    0 0 25px rgba(168, 85, 247, 0.6),
+    0 0 40px rgba(34, 211, 238, 0.3);
+}
+
+/* Carta jugable */
+.card-img.playable {
+  border: 2px solid #22d3ee;
+  box-shadow:
+    0 0 18px rgba(34, 211, 238, 0.8),
+    0 0 30px rgba(168, 85, 247, 0.5);
+}
+
+/* ========================================
+   MANOS
+======================================== */
+.player-hand,
+.opponent {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.opponent .card-img {
+  filter: brightness(0.85);
+  opacity: 0.85;
+  cursor: default;
+}
+
+/* ========================================
+   CARTA CENTRAL
+======================================== */
+.center-card .card-img {
+  width: 95px;
+  height: 130px;
+  border: 2px solid rgba(168, 85, 247, 0.5);
+  box-shadow:
+    0 0 30px rgba(168, 85, 247, 0.6),
+    0 0 50px rgba(34, 211, 238, 0.4);
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ========================================
+   ANIMACIÓN
+======================================== */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* ========================================
+   VIDAS
+======================================== */
+.lives {
+  display: flex;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 20px;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+/* ========================================
+   INFO MAZO
+======================================== */
+.deck-info {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  display: flex;
+  gap: 14px;
+  font-size: 0.85rem;
+}
+
+.deck-info strong {
+  color: #22d3ee;
+}
+
+/* ========================================
+   TURNO
+======================================== */
+.turn-banner {
+  background: linear-gradient(135deg, #a855f7, #22d3ee);
+  color: #020617;
+  padding: 8px 18px;
+  border-radius: 18px;
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+  box-shadow:
+    0 6px 20px rgba(168, 85, 247, 0.5);
+}
+
+/* ========================================
+   CONTROLES
+======================================== */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 480px;
+}
+
+.draw-btn,
+.question-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+/* Botones */
+.draw-btn {
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+}
+
+.question-btn {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.draw-btn:hover,
+.question-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+}
+
+/* ========================================
+   ERROR CARD
+======================================== */
+.error-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px dashed #ef4444;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 6px;
+}
+/* =========================
+   MODAL PREGUNTAS (MATH)
+========================= */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(2, 6, 23, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  border-radius: 18px;
+  padding: 25px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+
+  backdrop-filter: blur(10px);
+
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* =========================
+   TEXTO PREGUNTA
+========================= */
+
+.modal-content h3 {
+  color: #a855f7;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+
+  animation: fadeUp 0.4s ease;
+}
+
+/* =========================
+   OPCIONES
+========================= */
+
+.modal-content button {
+  width: 100%;
+  margin: 6px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  color: white;
+
+  background: rgba(51, 65, 85, 0.8);
+
+  transition: all 0.2s ease;
+}
+
+.modal-content button:hover {
+  transform: scale(1.02);
+  background: linear-gradient(135deg, #a855f7, #22d3ee);
+}
+
+/* =========================
+   FEEDBACK
+========================= */
+
+.modal-content p {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+
+  animation: fadeIn 0.4s ease;
+}
+
+/* =========================
+   CORRECTO / INCORRECTO
+========================= */
+
+.correct {
+  background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+}
+
+.incorrect {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+/* =========================
+   ANIMACIONES
+========================= */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* ========================================
+   RESPONSIVE
+======================================== */
+@media (max-width: 768px) {
+
+  .card-img {
+    width: 65px;
+    height: 95px;
+  }
+
+  .center-card .card-img {
+    width: 85px;
+    height: 120px;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .draw-btn,
+  .question-btn {
+    width: 100%;
+    max-width: 220px;
+  }
+}
