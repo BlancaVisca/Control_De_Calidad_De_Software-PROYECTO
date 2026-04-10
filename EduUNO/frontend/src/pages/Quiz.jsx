@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
 import { preguntasMath } from "../data/preguntasMath";
 import { preguntasRec } from "../data/preguntasRec";
@@ -12,8 +13,7 @@ export default function Quiz() {
 
   const theme = location.state?.theme || "recycling";
 
-  const preguntasBase =
-    theme === "math" ? preguntasMath : preguntasRec;
+  const preguntasBase = theme === "math" ? preguntasMath : preguntasRec;
 
   const shuffleArray = (array) => {
     return [...array].sort(() => Math.random() - 0.5);
@@ -27,6 +27,9 @@ export default function Quiz() {
   const [answers, setAnswers] = useState(Array(5).fill(null));
   const [finished, setFinished] = useState(false);
   const [score, setScore] = useState(0);
+  
+  // 🕹️ Estado para la pantalla final (0: Ir al juego, 1: Ver flashcards)
+  const [focoFinal, setFocoFinal] = useState(0); 
 
   const currentQuestion = questions[currentIndex];
   const selected = answers[currentIndex];
@@ -68,7 +71,63 @@ export default function Quiz() {
     setFinished(true);
   };
 
+  /* ===== LÓGICA DEL MANDO 🕹️ ===== */
+  useMando({
+    // Joystick Arriba: Sube en las opciones del cuestionario
+    onUp: () => {
+      if (!finished) {
+        if (selected === null || selected === 0) {
+          selectOption(currentQuestion.options.length - 1); // Va a la última opción
+        } else {
+          selectOption(selected - 1);
+        }
+      } else {
+        setFocoFinal(0); // En la pantalla final selecciona el botón de arriba
+      }
+    },
+    
+    // Joystick Abajo: Baja en las opciones del cuestionario
+    onDown: () => {
+      if (!finished) {
+        if (selected === null || selected === currentQuestion.options.length - 1) {
+          selectOption(0); // Vuelve a la primera opción
+        } else {
+          selectOption(selected + 1);
+        }
+      } else {
+        setFocoFinal(1); // En la pantalla final selecciona el botón de abajo
+      }
+    },
+
+    // Joystick Izquierda/Derecha (Para la pantalla final si los botones están lado a lado)
+    onLeft: () => { if (finished) setFocoFinal(0); },
+    onRight: () => { if (finished) setFocoFinal(1); },
+
+    // Botón 1 (Confirmar / Siguiente)
+    onButton2: () => {
+      if (!finished) {
+        nextQuestion(); // Tu función ya tiene el bloqueo de "selected === null", así que no avanzará si no han elegido.
+      } else {
+        // En la pantalla de resultados
+        if (focoFinal === 0) navigate("/gameR", { state: { theme } });
+        else navigate("/flashcards", { state: { theme } });
+      }
+    },
+
+    // Botón 2 (Regresar)
+    onButton1: () => {
+      if (!finished) prevQuestion();
+    }
+  });
+
   const passed = score >= 4;
+
+  // 🕹️ Función para estilos del mando en la pantalla final
+  const getFocusStyle = (index) => {
+    return focoFinal === index 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s" } 
+      : { transition: "all 0.2s" };
+  };
 
   return (
     <div className={`quiz-container ${theme}`}>
@@ -149,20 +208,24 @@ export default function Quiz() {
 
             <div className="quiz-actions">
 
+              {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn primary"
                 onClick={() =>
                   navigate("/gameR", { state: { theme } })
                 }
+                style={getFocusStyle(0)}
               >
                 Ir al juego
               </button>
 
+              {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn secondary"
                 onClick={() =>
                   navigate("/flashcards", { state: { theme } })
                 }
+                style={getFocusStyle(1)}
               >
                 Ver flashcards
               </button>
