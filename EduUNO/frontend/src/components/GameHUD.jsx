@@ -15,21 +15,25 @@ export default function GameHUD({
 }) {
   
   return (
-    <header className="game-hud" role="banner" aria-label="Panel de información del juego">
+    <header className="top-panel" role="banner" aria-label="Panel de información del juego">
       
-      {/* ❤️ VIDAS */}
-      <div className="lives" aria-label={`Vidas restantes: ${lives} de 3`}>
-        {[...Array(3)].map((_, index) => (
-          <img 
-            key={`vida-${index}`} 
-            src="/img/vidas.png" 
-            alt={index < lives ? "Vida activa" : "Vida perdida"}
-            className={index >= lives ? 'lost' : ''}
-            title={index < lives ? "❤️ Vida disponible" : "💔 Vida perdida"}
-            aria-hidden={index >= lives}
-            loading="lazy"
-          />
-        ))}
+      {/* ❤️ VIDAS 
+          🔥 CLAVE: Agregamos key={lives} para forzar a React a repaintear cuando cambia el número */}
+      <div className="lives" key={`lives-container-${lives}`} aria-label={`Vidas restantes: ${lives} de 3`}>
+        {[...Array(3)].map((_, index) => {
+          const isLost = index >= lives;
+          return (
+            <img 
+              key={`vida-${index}`} 
+              src="/img/vidas.png" 
+              alt={isLost ? "Vida perdida" : "Vida activa"}
+              className={isLost ? 'lost' : ''} /* Aquí se aplica la clase que definimos en CSS */
+              title={isLost ? "💔 Vida perdida" : "❤️ Vida disponible"}
+              style={{ opacity: isLost ? 0 : 1, transition: 'opacity 0.3s ease' }} /* Estilo inline de respaldo */
+              loading="lazy"
+            />
+          );
+        })}
       </div>
 
       {/* 📦 INFO DEL MAZO */}

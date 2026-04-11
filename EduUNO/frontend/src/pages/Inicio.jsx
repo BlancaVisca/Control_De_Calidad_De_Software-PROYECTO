@@ -1,18 +1,25 @@
 import "../css/inicio.css";
 import { useNavigate } from "react-router-dom";
 import inicioImg from "../assets/inicio.png";
+import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
-// 🕹️ 1. Importamos nuestro Custom Hook (Verifica que la ruta sea correcta)
-import { useMando } from "../hooks/useMando"; 
+// 🔊 SONIDO
+const soundButton = new Audio("/sounds/boton.mp3");
+
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
 
 export default function Inicio() {
   const navigate = useNavigate();
 
-  // 🕹️ 2. Activamos el mando para esta pantalla
+  // 🕹️ Activamos el mando para esta pantalla
   useMando({
-    // Cuando el jugador presione el Botón 1 en la maquinita, navegamos al menú
+    // Cuando el jugador presione el Botón 2 (Confirmar) en la maquinita
     onButton2: () => {
-      console.log("¡Botón 1 detectado! Pasando al menú...");
+      console.log("¡Botón detectado! Pasando al menú...");
+      playSound(soundButton); // Reproducimos el sonido también con el mando
       navigate("/menu");
     }
   });
@@ -33,7 +40,10 @@ export default function Inicio() {
 
       <button 
         className="inicio-btn"
-        onClick={() => navigate("/menu")}
+        onClick={() => {
+          playSound(soundButton);
+          navigate("/menu");
+        }}
       >
         ▶ JUGAR AHORA 
       </button>

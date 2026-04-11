@@ -3,6 +3,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
+// 🔊 SONIDO
+const soundButton = new Audio("/sounds/boton.mp3");
+
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Menu() {
   const [selectedTheme, setSelectedTheme] = useState("");
   const [error, setError] = useState("");
@@ -27,9 +35,15 @@ export default function Menu() {
     return true;
   };
 
+  // 🔥 CORRECCIÓN AQUÍ
   const startGame = () => {
     if (!validate()) return;
-    navigate("/gameR");
+
+    if (selectedTheme === "math") {
+      navigate("/gameM");
+    } else {
+      navigate("/gameR");
+    }
   };
 
   const goFlashcards = () => {
@@ -69,12 +83,17 @@ export default function Menu() {
     },
     // Confirmar acción (Enter)
     onButton2: () => {
-      if (focusedIndex === 1) startGame();
-      else if (focusedIndex === 2) goFlashcards();
+      if (focusedIndex === 1) {
+        playSound(soundButton); // Reproduce sonido al presionar el botón del arcade
+        startGame();
+      } else if (focusedIndex === 2) {
+        playSound(soundButton); // Reproduce sonido al presionar el botón del arcade
+        goFlashcards();
+      }
     }
   });
 
-  // Estilo visual para que el usuario sepa dónde está el foco (puedes pasarlo a tu CSS luego)
+  // Estilo visual para que el usuario sepa dónde está el foco
   const getFocusStyle = (index) => {
     return focusedIndex === index 
       ? { outline: "4px solid #4ade80", transform: "scale(1.02)", transition: "all 0.2s" } 
@@ -112,7 +131,10 @@ export default function Menu() {
 
         <button 
           className="btn-primary" 
-          onClick={startGame}
+          onClick={() => {
+            playSound(soundButton);
+            startGame();
+          }}
           style={getFocusStyle(1)}
         >
           INICIAR JUEGO →
@@ -120,7 +142,10 @@ export default function Menu() {
 
         <button 
           className="btn-secondary" 
-          onClick={goFlashcards}
+          onClick={() => {
+            playSound(soundButton);
+            goFlashcards();
+          }}
           style={getFocusStyle(2)}
         >
            VER FLASHCARDS

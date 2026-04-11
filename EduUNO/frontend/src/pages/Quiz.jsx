@@ -7,6 +7,17 @@ import { preguntasRec } from "../data/preguntasRec";
 
 import "../css/quiz.css";
 
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundSuccess = new Audio("/sounds/correcto.mp3");
+const soundFail = new Audio("/sounds/equivocacion.mp3");
+
+// 🔊 helper
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Quiz() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +44,7 @@ export default function Quiz() {
 
   const currentQuestion = questions[currentIndex];
   const selected = answers[currentIndex];
+  const passed = score >= 4;
 
   /* ===== SELECCIONAR ===== */
   const selectOption = (index) => {
@@ -44,6 +56,7 @@ export default function Quiz() {
   /* ===== SIGUIENTE ===== */
   const nextQuestion = () => {
     if (selected === null) return;
+    playSound(soundButton);
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -55,6 +68,7 @@ export default function Quiz() {
   /* ===== REGRESAR ===== */
   const prevQuestion = () => {
     if (currentIndex > 0) {
+      playSound(soundButton);
       setCurrentIndex(currentIndex - 1);
     }
   };
@@ -69,6 +83,15 @@ export default function Quiz() {
 
     setScore(correctCount);
     setFinished(true);
+
+    // 🔊 retrasamos el sonido para no romper render
+    setTimeout(() => {
+      if (correctCount >= 4) {
+        playSound(soundSuccess);
+      } else {
+        playSound(soundFail);
+      }
+    }, 100);
   };
 
   /* ===== LÓGICA DEL MANDO 🕹️ ===== */
@@ -76,12 +99,14 @@ export default function Quiz() {
     // Joystick Arriba: Sube en las opciones del cuestionario
     onUp: () => {
       if (!finished) {
+        playSound(soundButton);
         if (selected === null || selected === 0) {
           selectOption(currentQuestion.options.length - 1); // Va a la última opción
         } else {
           selectOption(selected - 1);
         }
       } else {
+        playSound(soundButton);
         setFocoFinal(0); // En la pantalla final selecciona el botón de arriba
       }
     },
@@ -89,38 +114,39 @@ export default function Quiz() {
     // Joystick Abajo: Baja en las opciones del cuestionario
     onDown: () => {
       if (!finished) {
+        playSound(soundButton);
         if (selected === null || selected === currentQuestion.options.length - 1) {
           selectOption(0); // Vuelve a la primera opción
         } else {
           selectOption(selected + 1);
         }
       } else {
+        playSound(soundButton);
         setFocoFinal(1); // En la pantalla final selecciona el botón de abajo
       }
     },
 
     // Joystick Izquierda/Derecha (Para la pantalla final si los botones están lado a lado)
-    onLeft: () => { if (finished) setFocoFinal(0); },
-    onRight: () => { if (finished) setFocoFinal(1); },
+    onLeft: () => { if (finished) { playSound(soundButton); setFocoFinal(0); } },
+    onRight: () => { if (finished) { playSound(soundButton); setFocoFinal(1); } },
 
-    // Botón 1 (Confirmar / Siguiente)
+    // Botón 2 (Confirmar / Siguiente)
     onButton2: () => {
       if (!finished) {
-        nextQuestion(); // Tu función ya tiene el bloqueo de "selected === null", así que no avanzará si no han elegido.
+        nextQuestion(); // Tu función ya tiene el bloqueo de "selected === null"
       } else {
+        playSound(soundButton);
         // En la pantalla de resultados
-        if (focoFinal === 0) navigate("/gameR", { state: { theme } });
+        if (focoFinal === 0) navigate(theme === "math" ? "/gameM" : "/gameR", { state: { theme } });
         else navigate("/flashcards", { state: { theme } });
       }
     },
 
-    // Botón 2 (Regresar)
+    // Botón 1 (Regresar)
     onButton1: () => {
       if (!finished) prevQuestion();
     }
   });
-
-  const passed = score >= 4;
 
   // 🕹️ Función para estilos del mando en la pantalla final
   const getFocusStyle = (index) => {
@@ -164,7 +190,12 @@ export default function Quiz() {
                   className={`quiz-option ${
                     selected === i ? "selected" : ""
                   }`}
-                  onClick={() => selectOption(i)}
+                 
+                onClick={() => {
+                  playSound(soundButton);
+                  selectOption(i);
+                }}
+
                 >
                   {opt}
                 </button>
@@ -211,9 +242,12 @@ export default function Quiz() {
               {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn primary"
-                onClick={() =>
-                  navigate("/gameR", { state: { theme } })
-                }
+                onClick={() => {
+                  playSound(soundButton);
+                  navigate(theme === "math" ? "/gameM" : "/gameR", {
+                    state: { theme }
+                  });
+                }}
                 style={getFocusStyle(0)}
               >
                 Ir al juego
@@ -222,9 +256,10 @@ export default function Quiz() {
               {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn secondary"
-                onClick={() =>
-                  navigate("/flashcards", { state: { theme } })
-                }
+                onClick={() => {
+                  playSound(soundButton);
+                  navigate("/flashcards", { state: { theme } });
+                }}
                 style={getFocusStyle(1)}
               >
                 Ver flashcards

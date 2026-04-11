@@ -5,6 +5,15 @@ import { flashcardsDataMath } from "../data/flashcardsDataMath";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
+// 🔊 SONIDOS
+const soundFlip = new Audio("/sounds/flash.mp3");
+const soundButton = new Audio("/sounds/boton.mp3");
+
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -16,16 +25,82 @@ export default function Flashcards() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* ===== RECIBIR THEME ===== */
+  /* ===== THEME ===== */
   const theme = location.state?.theme || "recycling";
 
-  /* ===== SELECCIONAR DATA ===== */
+  /* ===== DATA ===== */
   const data = theme === "math" ? flashcardsDataMath : flashcardsData;
   const card = data[currentIndex];
+
+  /* ===== GRAFICAS DINAMICAS ===== */
+  useEffect(() => {
+    const canvas = document.getElementById(`graph-${currentIndex}`);
+    if (!canvas || !card.graph) return;
+
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Ejes
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.moveTo(w / 2, 0);
+    ctx.lineTo(w / 2, h);
+    ctx.strokeStyle = "#888";
+    ctx.stroke();
+
+    ctx.strokeStyle = "red";
+
+    /* ===== LINEAL ===== */
+    if (card.graph.type === "linear") {
+      const { m, b } = card.graph;
+
+      ctx.beginPath();
+      for (let x = -10; x <= 10; x++) {
+        let y = m * x + b;
+        let px = w / 2 + x * 10;
+        let py = h / 2 - y * 10;
+
+        if (x === -10) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    /* ===== PARABOLA ===== */
+    if (card.graph.type === "parabola") {
+      const { a } = card.graph;
+
+      ctx.beginPath();
+      for (let x = -10; x <= 10; x++) {
+        let y = a * x * x;
+        let px = w / 2 + x * 10;
+        let py = h / 2 - y * 5;
+
+        if (x === -10) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    /* ===== CIRCULO ===== */
+    if (card.graph.type === "circle") {
+      const { r } = card.graph;
+
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, r * 20, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+  }, [currentIndex, flipped, card]);
 
   /* ===== NAVEGACION ===== */
   const nextCard = () => {
     if (currentIndex < data.length - 1) {
+      playSound(soundButton);
       setCurrentIndex(currentIndex + 1);
       setFlipped(false);
       setFocoEspecial("none"); // Reseteamos el foco al cambiar de carta
@@ -34,14 +109,16 @@ export default function Flashcards() {
 
   const prevCard = () => {
     if (currentIndex > 0) {
+      playSound(soundButton);
       setCurrentIndex(currentIndex - 1);
       setFlipped(false);
       setFocoEspecial("none"); // Reseteamos el foco al regresar
     }
   };
 
-  /* ===== IR AL QUIZ ===== */
+  /* ===== QUIZ ===== */
   const goQuiz = () => {
+    playSound(soundButton);
     navigate("/quiz", { state: { theme } });
   };
 
@@ -49,10 +126,12 @@ export default function Flashcards() {
   useMando({
     // Izquierda o Derecha voltean la carta y devuelven el foco al centro
     onLeft: () => {
+      playSound(soundFlip); // Agregamos el sonido al mando
       setFlipped((prev) => !prev);
       setFocoEspecial("none");
     },
     onRight: () => {
+      playSound(soundFlip); // Agregamos el sonido al mando
       setFlipped((prev) => !prev);
       setFocoEspecial("none");
     },
@@ -66,9 +145,10 @@ export default function Flashcards() {
       }
     },
     
-    // Botón 1: Acción de confirmar (Depende de qué esté enfocado)
+    // Botón 2: Acción de confirmar (Depende de qué esté enfocado)
     onButton2: () => {
       if (focoEspecial === "menu") {
+        playSound(soundButton);
         navigate("/menu");
       } else if (focoEspecial === "quiz" && currentIndex === data.length - 1) {
         goQuiz();
@@ -77,7 +157,7 @@ export default function Flashcards() {
       }
     },
     
-    // Botón 2: Acción de regresar
+    // Botón 1: Acción de regresar
     onButton1: () => prevCard()
   });
 
@@ -99,6 +179,7 @@ export default function Flashcards() {
   return (
     <div className={`container ${theme}`}>
 
+      {/* HEADER */}
       <header className="header">
         <h1 className="header-title">
           {theme === "math"
@@ -115,19 +196,33 @@ export default function Flashcards() {
         </span>
       </header>
 
+      {/* MAIN */}
       <main className="main-content">
         <div
           className="flashcard-container"
-          onClick={() => setFlipped(!flipped)}
+          onClick={() => {
+            playSound(soundFlip);
+            setFlipped(!flipped);
+          }}
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
             {/* FRONT */}
             <div className="flashcard-front">
               <h2 className="card-title">{card.title}</h2>
+
               <p className="card-definition">{card.definition}</p>
 
+              {/* GRAFICA EN FRONT */}
+              {card.graph && (
+                <canvas
+                  id={`graph-${currentIndex}`}
+                  width="250"
+                  height="250"
+                ></canvas>
+              )}
+
               <div className="curiosity-box">
-                <h3>¿Sabías que...?</h3>
+                <h3>Ejemplo</h3>
                 <p>{card.curiosity}</p>
               </div>
             </div>
@@ -175,14 +270,17 @@ export default function Flashcards() {
         {/* 🕹️ Foco visual para Volver al menú */}
         <button
           className="back-menu-btn"
-          onClick={() => navigate("/menu")}
+          onClick={() => {
+            playSound(soundButton);
+            navigate("/menu");
+          }}
           style={getFocusStyle("menu")}
         >
           &larr; Volver al menú
         </button>
       </div>
 
-      {/* BOTON QUIZ SOLO EN LA ULTIMA TARJETA */}
+      {/* QUIZ */}
       {currentIndex === data.length - 1 && (
         <div className="quiz-start-container">
           <button

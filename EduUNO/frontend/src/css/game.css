@@ -119,7 +119,7 @@
 
 .center-card .card-img {
   width: 90px;   /* 🔥 más pequeña */
-  height: 135px;
+  height: 127px;
   border: 2px solid rgba(148, 163, 184, 0.4);
   box-shadow:
     0 0 30px rgba(59, 130, 246, 0.5),
@@ -227,6 +227,12 @@
   transform: translateY(-2px);
 }
 
+.lives img.lost {
+  opacity: 0;           /* Lo hace transparente */
+  visibility: hidden;   /* Oculta el elemento completamente */
+  filter: none;         /* Quita el brillo rojo */
+  pointer-events: none; /* No se puede clicar */
+}
 /* ========================================
    RESPONSIVE
 ======================================== */
@@ -256,8 +262,8 @@
 }
 /* 🔥 TAMAÑO PROFESIONAL DE CARTAS */
 .card-img {
-  width: 90px;        /* tamaño fijo */
-  height: 130px;      /* proporción tipo UNO */
+  width: 80px;        /* tamaño fijo */
+  height: 110px;      /* proporción tipo UNO */
   object-fit: contain;
   margin: 6px;
   border-radius: 10px;
@@ -285,4 +291,15 @@
   font-size: 0.7rem;
   text-align: center;
   padding: 6px;
+}
+.card-img.playable {
+  border: 2px solid #60a5fa;
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
+  cursor: pointer;
+}
+
+/* Deshabilitar clicks visuales */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

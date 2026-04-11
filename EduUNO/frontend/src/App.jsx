@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Menu from "./pages/Menu";
 import Flashcards from "./pages/Flashcards";
 import GameR from "./pages/GameR";
+import GameM from "./pages/GameM";
 import Inicio from "./pages/Inicio";
 import Quiz from "./pages/Quiz";
 
@@ -15,7 +16,8 @@ function App() {
         <Route path="/" element={<Inicio />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/flashcards" element={<Flashcards />} />
-        <Route path="/gamer" element={<GameR />} />
+        <Route path="/gameR" element={<GameR />} />
+        <Route path="/gameM" element={<GameM />} />
         <Route path="/quiz" element={<Quiz />} />
       </Routes>
     </BrowserRouter>
