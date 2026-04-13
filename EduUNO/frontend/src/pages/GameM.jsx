@@ -5,6 +5,17 @@ import PlayerHandM from "../components/PlayerHandM";
 import GameHUD from "../components/GameHUD";
 import "../css/gameM.css";
 
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundCard = new Audio("/sounds/flash.mp3");
+const soundGood = new Audio("/sounds/retro_buena.mp3");
+const soundBad = new Audio("/sounds/retro_mala.mp3");
+
+const playSound = (sound) => {
+  sound.currentTime = 0;
+  sound.play();
+};
+
 export default function GameM() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -110,6 +121,7 @@ export default function GameM() {
     if (data.error) {
       setModalMessage(`⚠️ ${data.error}`);
     } else {
+      playSound(soundCard);
       setGame(data);
     }
   };
@@ -120,7 +132,9 @@ export default function GameM() {
   const handleDrawCard = async () => {
     if (game.currentPlayer !== "player") return;
 
-    const res = await fetch("http://localhost:3006/draw", {
+    const res = await 
+    playSound(soundButton);
+    fetch("http://localhost:3006/draw", {
       method: "POST",
     });
 
@@ -138,6 +152,7 @@ export default function GameM() {
      ❓ PREGUNTA
   ========================= */
   const handleOpenQuestion = async () => {
+    playSound(soundButton);
     if (game.currentPlayer !== "player") return;
 
     const res = await fetch("http://localhost:3006/question");
@@ -181,8 +196,10 @@ export default function GameM() {
       setGame(data);
 
       if (data.questionResult === "success") {
+         playSound(soundGood); 
         setModalMessage("✅ ¡Correcto! Modo libre activado.");
       } else {
+         playSound(soundBad); 
         setModalMessage(`❌ Incorrecto. Vidas: ${data.lives}`);
       }
 
@@ -224,11 +241,17 @@ export default function GameM() {
         </div>
 
         <div className="controls">
-          <button className="draw-btn" onClick={handleDrawCard}>
+          <button className="draw-btn" onClick={() => {
+  playSound(soundButton);
+  handleDrawCard();
+}}>
             Robar
           </button>
 
-          <button className="question-btn" onClick={handleOpenQuestion}>
+         <button className="question-btn" onClick={() => {
+  playSound(soundButton);
+  handleOpenQuestion();
+}}>
             Pregunta ({game.questionsLeft})
           </button>
         </div>
