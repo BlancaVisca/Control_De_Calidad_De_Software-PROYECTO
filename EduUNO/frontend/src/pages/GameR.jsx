@@ -5,6 +5,24 @@ import PlayerHand from "../components/PlayerHand";
 import GameHUD from "../components/GameHUD";
 import "../css/game.css";
 
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundCard = new Audio("/sounds/flash.mp3");
+const soundCorrect = new Audio("/sounds/correcto.mp3");
+const soundWrong = new Audio("/sounds/equivocacion.mp3");
+const soundWin = new Audio("/sounds/retro_buena.mp3");
+const soundLose = new Audio("/sounds/retro_mala.mp3");
+
+const playSound = (sound) => {
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
+};
+
 export default function GameR() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +50,16 @@ export default function GameR() {
     }, 1000);
     return () => clearInterval(interval);
   }, [game?.currentPlayer, game?.status]);
+
+  useEffect(() => {
+  if (game?.status === "gameOver") {
+    if (game.winner === "player") {
+      playSound(soundWin);
+    } else {
+      playSound(soundLose);
+    }
+  }
+}, [game?.status]);
 
   if (loading || !game) return <div className="loading-screen"><h1>Cargando...</h1></div>;
 
@@ -129,6 +157,7 @@ export default function GameR() {
 
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
+    playSound(soundCard);
     try {
       const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
       const data = await res.json();
@@ -163,6 +192,9 @@ export default function GameR() {
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
+
+    playSound(soundCard);
+
     const res = await fetch("http://localhost:3005/draw", { method: "POST" });
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
@@ -175,6 +207,9 @@ export default function GameR() {
 
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== 'player') return;
+
+    playSound(soundButton);
+
     if (game.freePlay) {
        const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
        const data = await res.json();
@@ -219,9 +254,11 @@ export default function GameR() {
       // 2. Preparamos el mensaje
       let msg = "";
       if (data.questionResult === 'success') {
+        playSound(soundCorrect);
         msg = "✅ ¡Correcto!  MODO LIBRE ACTIVADO.";
       } else {
         // Aquí es donde el servidor dice cuántas vidas quedan
+        playSound(soundWrong); 
         const vidasRestantes = data.lives; 
         msg = `❌ Incorrecto. Pierdes 1 vida. Te quedan: ${vidasRestantes} ❤️`;
       }

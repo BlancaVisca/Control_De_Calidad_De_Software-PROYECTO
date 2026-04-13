@@ -6,13 +6,21 @@ import { useNavigate } from "react-router-dom";
 const soundButton = new Audio("/sounds/boton.mp3");
 
 const playSound = (sound) => {
-  sound.currentTime = 0;
-  sound.play();
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
 };
 
 export default function Menu() {
   const [selectedTheme, setSelectedTheme] = useState("");
   const [error, setError] = useState("");
+  const [muted, setMuted] = useState(
+  localStorage.getItem("mute") === "true"
+);
   const navigate = useNavigate();
 
   const validate = () => {
@@ -86,6 +94,17 @@ export default function Menu() {
         >
           VER FLASHCARDS
         </button>
+
+          <button
+    className="btn-secondary"
+    onClick={() => {
+      const newValue = !muted;
+      setMuted(newValue);
+      localStorage.setItem("mute", newValue);
+    }}
+  >
+    {muted ? "🔇 Sonido OFF" : "🔊 Sonido ON"}
+  </button>
 
       </div>
     </div>

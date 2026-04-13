@@ -5,15 +5,21 @@ import PlayerHandM from "../components/PlayerHandM";
 import GameHUD from "../components/GameHUD";
 import "../css/gameM.css";
 
-// 🔊 SONIDOS
+// 🔊 SONIDOS 
 const soundButton = new Audio("/sounds/boton.mp3");
 const soundCard = new Audio("/sounds/flash.mp3");
-const soundGood = new Audio("/sounds/retro_buena.mp3");
-const soundBad = new Audio("/sounds/retro_mala.mp3");
+const soundWrong = new Audio("/sounds/equivocacion.mp3");
+const soundWin = new Audio("/sounds/retro_buena.mp3");
+const soundLose = new Audio("/sounds/retro_mala.mp3");
 
 const playSound = (sound) => {
-  sound.currentTime = 0;
-  sound.play();
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
 };
 
 export default function GameM() {
@@ -50,6 +56,16 @@ export default function GameM() {
 
     return () => clearInterval(interval);
   }, [game?.currentPlayer]);
+
+  useEffect(() => {
+  if (game?.status === "gameOver") {
+    if (game.winner === "player") {
+      playSound(soundWin);
+    } else {
+      playSound(soundLose);
+    }
+  }
+}, [game?.status]);
 
   if (loading || !game) return <h1>Cargando...</h1>;
 
@@ -132,8 +148,9 @@ export default function GameM() {
   const handleDrawCard = async () => {
     if (game.currentPlayer !== "player") return;
 
+    playSound(soundCard); 
+
     const res = await 
-    playSound(soundButton);
     fetch("http://localhost:3006/draw", {
       method: "POST",
     });
@@ -152,8 +169,9 @@ export default function GameM() {
      ❓ PREGUNTA
   ========================= */
   const handleOpenQuestion = async () => {
-    playSound(soundButton);
     if (game.currentPlayer !== "player") return;
+
+    playSound(soundButton);
 
     const res = await fetch("http://localhost:3006/question");
     const data = await res.json();
@@ -196,10 +214,10 @@ export default function GameM() {
       setGame(data);
 
       if (data.questionResult === "success") {
-         playSound(soundGood); 
+         playSound(new Audio("/sounds/correcto.mp3"));
         setModalMessage("✅ ¡Correcto! Modo libre activado.");
       } else {
-         playSound(soundBad); 
+        playSound(soundWrong);
         setModalMessage(`❌ Incorrecto. Vidas: ${data.lives}`);
       }
 
@@ -242,14 +260,12 @@ export default function GameM() {
 
         <div className="controls">
           <button className="draw-btn" onClick={() => {
-  playSound(soundButton);
-  handleDrawCard();
+             handleDrawCard();
 }}>
             Robar
           </button>
 
          <button className="question-btn" onClick={() => {
-  playSound(soundButton);
   handleOpenQuestion();
 }}>
             Pregunta ({game.questionsLeft})

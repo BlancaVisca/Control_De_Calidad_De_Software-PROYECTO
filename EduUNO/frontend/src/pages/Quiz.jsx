@@ -11,10 +11,14 @@ const soundButton = new Audio("/sounds/boton.mp3");
 const soundSuccess = new Audio("/sounds/correcto.mp3");
 const soundFail = new Audio("/sounds/equivocacion.mp3");
 
-// 🔊 helper
 const playSound = (sound) => {
-  sound.currentTime = 0;
-  sound.play();
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
 };
 
 export default function Quiz() {
