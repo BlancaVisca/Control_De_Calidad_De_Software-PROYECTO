@@ -3,6 +3,18 @@ const cors = require("cors");
 const http = require("http"); // 🔌 Requerido para Socket.io
 const { Server } = require("socket.io"); // 🔌 Requerido para Socket.io
 const { SerialPort, ReadlineParser } = require("serialport"); // 🕹️ Requerido para el mando
+const dgram = require('dgram');
+const udpServer = dgram.createSocket('udp4');
+
+// Escuchamos en el mismo puerto que definimos en Arduino
+udpServer.on('message', (msg, rinfo) => {
+  const data = msg.toString();
+  // Retransmitimos a React por el WebSocket que ya tenemos
+  io.emit("mando_estado", data); 
+});
+
+udpServer.bind(4210); 
+console.log("📡 Servidor UDP escuchando para el mando inalámbrico");
 
 const { createDeck, drawCardLogic, playCard, COLORS, RECICLES } = require("./gameEngine");
 const questions = require("./questions");

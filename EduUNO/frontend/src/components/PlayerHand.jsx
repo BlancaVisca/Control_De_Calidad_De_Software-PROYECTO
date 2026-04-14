@@ -1,5 +1,5 @@
 /**
- * PlayerHand.jsx - Mano del jugador con interacción
+ * PlayerHand.jsx - Mano del jugador con interacción y Mando Arcade
  * Ubicación: EDUUNO/frontend/src/components/PlayerHand.jsx
  */
 
@@ -12,7 +12,8 @@ export default function PlayerHand({
   onPlay = () => {}, 
   canPlay = null,
   currentPlayer = 'player',
-  isProcessing = false 
+  isProcessing = false,
+  focusedIndex = -1 // 🕹️ Nueva propiedad para el mando
 }) {
   
   if (!hand || hand.length === 0) {
@@ -38,14 +39,29 @@ export default function PlayerHand({
         
         const cardKey = card?.id || `player-card-${index}-${card?.name || 'unknown'}`;
         
+        // 🕹️ Verificamos si esta es la carta que el joystick está señalando
+        const isFocused = focusedIndex === index;
+        
         return (
-          <Card
+          // 🕹️ Envolvemos la carta en un div para aplicarle las animaciones del joystick
+          <div
             key={cardKey}
-            card={card}
-            onClick={playable ? () => onPlay(card) : undefined}
-            disabled={!isTurn || !playable || isProcessing}
-            isPlayable={playable}
-          />
+            style={{
+              outline: isFocused ? "4px solid #4ade80" : "none",
+              transform: isFocused ? "translateY(-25px) scale(1.1)" : "none",
+              transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)", // Animación fluida
+              zIndex: isFocused ? 100 : 1,
+              borderRadius: "14px", // Ajusta según lo redondeadas que sean tus cartas
+              cursor: playable ? "pointer" : "default"
+            }}
+          >
+            <Card
+              card={card}
+              onClick={playable ? () => onPlay(card) : undefined}
+              disabled={!isTurn || !playable || isProcessing}
+              isPlayable={playable}
+            />
+          </div>
         );
       })}
     </section>
@@ -58,11 +74,13 @@ PlayerHand.propTypes = {
   onPlay: PropTypes.func.isRequired,
   canPlay: PropTypes.func,
   currentPlayer: PropTypes.oneOf(['player', 'opponent']).isRequired,
-  isProcessing: PropTypes.bool
+  isProcessing: PropTypes.bool,
+  focusedIndex: PropTypes.number // 🕹️ Agregado a las validaciones
 };
 
 PlayerHand.defaultProps = {
   topCard: null,
   canPlay: null,
-  isProcessing: false
+  isProcessing: false,
+  focusedIndex: -1
 };
