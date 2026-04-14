@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const { createDeck, drawCardLogic, playCard, COLORS, RECICLES } = require("./gameEngine");
 const questions = require("./questions");
+const db = require("./db");
 
 const mathEngine = require("./gameEngineMath");
 const questionsM = require("./questionsM");
@@ -409,5 +410,133 @@ function makeOpponentMoveM() {
 ========================================================== */
 app.use("/recycling", recyclingRouter);
 app.use("/math", mathRouter);
+
+/* ==========================================================
+   ENDPOINTS DE BASE DE DATOS
+========================================================== */
+
+// Sentencias preparadas (compiladas una sola vez)
+const insertResult = db.prepare(`
+  INSERT INTO quiz_results (theme, score, total, passed, created_at)
+  VALUES (@theme, @score, @total, @passed, @created_at)
+`);
+
+const insertAnswer = db.prepare(`
+  INSERT INTO quiz_answers (quiz_result_id, question_text, selected_index, correct_index, is_correct)
+  VALUES (@quiz_result_id, @question_text, @selected_index, @correct_index, @is_correct)
+`);
+
+// Transacción: guarda resultado + todas las respuestas de forma atómica
+const saveQuizResult = db.transaction((theme, score, total, answers) => {
+  const passed = score >= 4 ? 1 : 0;
+  const created_at = new Date().toISOString();
+
+  const { lastInsertRowid } = insertResult.run({ theme, score, total, passed, created_at });
+
+  for (const ans of answers) {
+    insertAnswer.run({
+      quiz_result_id: lastInsertRowid,
+      question_text:  ans.question_text,
+      selected_index: ans.selected_index,
+      correct_index:  ans.correct_index,
+      is_correct:     ans.selected_index === ans.correct_index ? 1 : 0
+    });
+  }
+
+  return lastInsertRowid;
+});
+
+/*
+  POST /quiz-result
+  Body: {
+    theme: "math" | "recycling",
+    score: number,
+    total: number,
+    answers: [{ question_text, selected_index, correct_index }]
+  }
+*/
+app.post("/quiz-result", (req, res) => {
+  const { theme, score, total, answers } = req.body;
+
+  if (!theme || score == null || !total || !Array.isArray(answers)) {
+    return res.status(400).json({ error: "Datos incompletos" });
+  }
+
+  if (!["math", "recycling"].includes(theme)) {
+    return res.status(400).json({ error: "Tema inválido" });
+  }
+
+  const id = saveQuizResult(theme, score, total, answers);
+  res.status(201).json({ id, message: "Resultado guardado" });
+});
+
+/*
+  GET /results?theme=math|recycling
+  Devuelve todos los resultados con su detalle de respuestas.
+*/
+app.get("/results", (req, res) => {
+  const { theme } = req.query;
+
+  const results = theme
+    ? db.prepare("SELECT * FROM quiz_results WHERE theme = ? ORDER BY created_at DESC").all(theme)
+    : db.prepare("SELECT * FROM quiz_results ORDER BY created_at DESC").all();
+
+  const resultIds = results.map(r => r.id);
+
+  let answers = [];
+  if (resultIds.length > 0) {
+    const placeholders = resultIds.map(() => "?").join(",");
+    answers = db.prepare(
+      `SELECT * FROM quiz_answers WHERE quiz_result_id IN (${placeholders})`
+    ).all(...resultIds);
+  }
+
+  // Agrupar respuestas por quiz_result_id
+  const answersMap = {};
+  for (const ans of answers) {
+    if (!answersMap[ans.quiz_result_id]) answersMap[ans.quiz_result_id] = [];
+    answersMap[ans.quiz_result_id].push(ans);
+  }
+
+  const data = results.map(r => ({
+    ...r,
+    passed: r.passed === 1,
+    answers: answersMap[r.id] || []
+  }));
+
+  res.json(data);
+});
+
+/*
+  GET /stats?theme=math|recycling
+  Devuelve métricas agregadas para análisis de progreso.
+*/
+app.get("/stats", (req, res) => {
+  const { theme } = req.query;
+  const where = theme ? "WHERE theme = ?" : "";
+  const params = theme ? [theme] : [];
+
+  const summary = db.prepare(`
+    SELECT
+      COUNT(*)                          AS total_quizzes,
+      ROUND(AVG(score), 2)              AS avg_score,
+      ROUND(AVG(passed) * 100, 1)       AS pass_rate,
+      MAX(score)                        AS best_score,
+      MIN(score)                        AS worst_score
+    FROM quiz_results ${where}
+  `).get(...params);
+
+  const byTheme = db.prepare(`
+    SELECT
+      theme,
+      COUNT(*)                    AS quizzes,
+      ROUND(AVG(score), 2)        AS avg_score,
+      ROUND(AVG(passed) * 100, 1) AS pass_rate
+    FROM quiz_results
+    GROUP BY theme
+  `).all();
+
+  res.json({ summary, by_theme: byTheme });
+});
 
 app.listen(PORT, () => console.log(`Servidor unificado en puerto ${PORT}`));
