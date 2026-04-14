@@ -16,7 +16,7 @@ export default function GameM() {
      START
   ========================= */
   useEffect(() => {
-    fetch("http://localhost:3006/start", { method: "POST" })
+    fetch("http://localhost:3005/math/start", { method: "POST" })
       .then(res => res.json())
       .then(data => {
         setGame(data);
@@ -32,7 +32,7 @@ export default function GameM() {
     if (!game || game.currentPlayer === "player") return;
 
     const interval = setInterval(() => {
-      fetch("http://localhost:3006/status")
+      fetch("http://localhost:3005/math/status")
         .then(res => res.json())
         .then(data => setGame(prev => ({ ...prev, ...data })));
     }, 800);
@@ -99,7 +99,7 @@ export default function GameM() {
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== "player") return;
 
-    const res = await fetch("http://localhost:3006/play", {
+    const res = await fetch("http://localhost:3005/math/play", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ card }),
@@ -120,7 +120,7 @@ export default function GameM() {
   const handleDrawCard = async () => {
     if (game.currentPlayer !== "player") return;
 
-    const res = await fetch("http://localhost:3006/draw", {
+    const res = await fetch("http://localhost:3005/math/draw", {
       method: "POST",
     });
 
@@ -140,7 +140,7 @@ export default function GameM() {
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== "player") return;
 
-    const res = await fetch("http://localhost:3006/question");
+    const res = await fetch("http://localhost:3005/math/question");
     const data = await res.json();
 
     if (data.error) {
@@ -160,7 +160,7 @@ export default function GameM() {
     setUserAnswer(index);
 
     try {
-      const res = await fetch("http://localhost:3006/answer-question", {
+      const res = await fetch("http://localhost:3005/math/answer-question", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

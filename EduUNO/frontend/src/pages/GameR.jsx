@@ -14,7 +14,7 @@ export default function GameR() {
   const [pendingChoice, setPendingChoice] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:3005/start", { method: "POST" })
+    fetch("http://localhost:3005/recycling/start", { method: "POST" })
       .then(res => res.json())
       .then(data => { 
         setGame(data); 
@@ -26,7 +26,7 @@ export default function GameR() {
   useEffect(() => {
     if (!game || game.status === 'gameOver' || game.currentPlayer === 'player') return;
     const interval = setInterval(() => {
-      fetch("http://localhost:3005/status")
+      fetch("http://localhost:3005/recycling/status")
         .then(res => res.json())
         .then(data => setGame(prev => ({ ...prev, ...data })));
     }, 1000);
@@ -130,7 +130,7 @@ export default function GameR() {
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
     try {
-      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
+      const res = await fetch("http://localhost:3005/recycling/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
       const data = await res.json();
       if (data.status === 'gameOver') { setGame(data); return; }
       if (data.error) { setModalMessage(`⚠️ ${data.error}`); } 
@@ -148,7 +148,7 @@ export default function GameR() {
     if (!pendingChoice) return;
     try {
       const body = { card: pendingChoice.card, chosenColor: pendingChoice.type === 'color' ? selection : null, chosenRecycle: pendingChoice.type === 'recycle' ? selection : null };
-      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("http://localhost:3005/recycling/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.status === 'gameOver') { setGame(data); setPendingChoice(null); return; }
       if (data.error) { setModalMessage(`Error: ${data.error}`); } 
@@ -163,7 +163,7 @@ export default function GameR() {
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
-    const res = await fetch("http://localhost:3005/draw", { method: "POST" });
+    const res = await fetch("http://localhost:3005/recycling/draw", { method: "POST" });
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) setModalMessage(data.error);
@@ -176,14 +176,14 @@ export default function GameR() {
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== 'player') return;
     if (game.freePlay) {
-       const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
+       const res = await fetch("http://localhost:3005/recycling/check-question-usage", { method: "POST" });
        const data = await res.json();
        if (data.status === 'gameOver') { setGame(data); return; }
        setGame(data);
        setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
        return;
     }
-    const res = await fetch("http://localhost:3005/question");
+    const res = await fetch("http://localhost:3005/recycling/question");
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) {
@@ -201,7 +201,7 @@ export default function GameR() {
     setUserAnswer(optionIndex);
     
     try {
-      const res = await fetch("http://localhost:3005/answer-question", {
+      const res = await fetch("http://localhost:3005/recycling/answer-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questionId: selectedQuestion.id, selectedOption: optionIndex })
