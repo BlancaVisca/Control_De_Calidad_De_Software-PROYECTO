@@ -1,14 +1,68 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http"); // 🔌 Requerido para Socket.io
+const { Server } = require("socket.io"); // 🔌 Requerido para Socket.io
+const { SerialPort, ReadlineParser } = require("serialport"); // 🕹️ Requerido para el mando
+const dgram = require('dgram');
+const udpServer = dgram.createSocket('udp4');
+
+// Escuchamos en el mismo puerto que definimos en Arduino
+udpServer.on('message', (msg, rinfo) => {
+  const data = msg.toString();
+  // Retransmitimos a React por el WebSocket que ya tenemos
+  io.emit("mando_estado", data); 
+});
+
+udpServer.bind(4210); 
+console.log("📡 Servidor UDP escuchando para el mando inalámbrico");
 
 const mathEngine = require("./gameEngineMath");
 const questionsM = require("./questionsM");
 
 const app = express();
+// 🔌 Creamos el servidor HTTP envolviendo la app de Express
+const server = http.createServer(app);
+
 app.use(cors());
 app.use(express.json());
 
 const PORT = 3006; // 🔥 diferente puerto
+const HOST = "127.0.0.1";
+
+// ===============================
+// 🔌 CONFIGURACIÓN DE WEBSOCKETS
+// ===============================
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("🔌 Frontend conectado a Math Server por WebSockets:", socket.id);
+});
+
+// ===============================
+// 🕹️ CONFIGURACIÓN DEL MANDO (SERIAL)
+// ===============================
+const PUERTO_ESP32 = "COM7"; 
+
+const port = new SerialPort({
+  path: PUERTO_ESP32,
+  baudRate: 115200,
+  autoOpen: true
+}, (err) => {
+  if (err) {
+    console.log("⚠️ Error al abrir COM7 en serverM (¿Está en uso por el otro server?):", err.message);
+  }
+});
+
+const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+
+parser.on("data", (data) => {
+  io.emit("mando_estado", data); 
+});
 
 let gameState = {};
 
@@ -164,4 +218,9 @@ function handleEmptyDeck(res) {
 ========================= */
 app.get("/status", (req, res) => res.json(gameState));
 
-app.listen(PORT, () => console.log(`Math server en puerto ${PORT}`));
+// 🔌 server.listen en lugar de app.listen
+server.listen(PORT, () => console.log(`🚀 Math server con WebSockets en http://${HOST}:${PORT}`));
+
+// Control de cierres
+process.on("SIGINT", () => server.close(() => process.exit(0)));
+process.on("SIGTERM", () => server.close(() => process.exit(0)));
