@@ -76,24 +76,42 @@ const prevQuestion = () => {
   /* ===== TERMINAR ===== */
 
   const finishQuiz = () => {
-  let correctCount = 0;
+    let correctCount = 0;
 
-  answers.forEach((ans, i) => {
-    if (ans === questions[i].correct) correctCount++;
-  });
+    answers.forEach((ans, i) => {
+      if (ans === questions[i].correct) correctCount++;
+    });
 
-  setScore(correctCount);
-  setFinished(true);
+    setScore(correctCount);
+    setFinished(true);
 
-  // 🔊 retrasamos el sonido para no romper render
-  setTimeout(() => {
-    if (correctCount >= 4) {
-      playSound(soundSuccess);
-    } else {
-      playSound(soundFail);
-    }
-  }, 100);
-};
+    // 🔊 retrasamos el sonido para no romper render
+    setTimeout(() => {
+      if (correctCount >= 4) {
+        playSound(soundSuccess);
+      } else {
+        playSound(soundFail);
+      }
+    }, 100);
+
+    // Guardar resultado en la base de datos
+    const payload = {
+      theme,
+      score: correctCount,
+      total: questions.length,
+      answers: questions.map((q, i) => ({
+        question_text:  q.question,
+        selected_index: answers[i],
+        correct_index:  q.correct
+      }))
+    };
+
+    fetch("http://localhost:3005/quiz-result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).catch(err => console.error("Error al guardar resultado:", err));
+  };
 
   return (
     <div className={`quiz-container ${theme}`}>
