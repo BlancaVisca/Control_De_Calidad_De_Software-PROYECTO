@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
 import { preguntasMath } from "../data/preguntasMath";
 import { preguntasRec } from "../data/preguntasRec";
@@ -11,10 +12,14 @@ const soundButton = new Audio("/sounds/boton.mp3");
 const soundSuccess = new Audio("/sounds/correcto.mp3");
 const soundFail = new Audio("/sounds/equivocacion.mp3");
 
-// 🔊 helper
 const playSound = (sound) => {
-  sound.currentTime = 0;
-  sound.play();
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
 };
 
 export default function Quiz() {
@@ -23,8 +28,7 @@ export default function Quiz() {
 
   const theme = location.state?.theme || "recycling";
 
-  const preguntasBase =
-    theme === "math" ? preguntasMath : preguntasRec;
+  const preguntasBase = theme === "math" ? preguntasMath : preguntasRec;
 
   const shuffleArray = (array) => {
     return [...array].sort(() => Math.random() - 0.5);
@@ -38,6 +42,9 @@ export default function Quiz() {
   const [answers, setAnswers] = useState(Array(5).fill(null));
   const [finished, setFinished] = useState(false);
   const [score, setScore] = useState(0);
+  
+  // 🕹️ Estado para la pantalla final (0: Ir al juego, 1: Ver flashcards)
+  const [focoFinal, setFocoFinal] = useState(0); 
 
   const currentQuestion = questions[currentIndex];
   const selected = answers[currentIndex];
@@ -51,30 +58,26 @@ export default function Quiz() {
   };
 
   /* ===== SIGUIENTE ===== */
-  
-    const nextQuestion = () => {
-      if (selected === null) return;
+  const nextQuestion = () => {
+    if (selected === null) return;
+    playSound(soundButton);
 
-      playSound(soundButton);
-
-      if (currentIndex < questions.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        finishQuiz();
-      }
-    };
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      finishQuiz();
+    }
+  };
 
   /* ===== REGRESAR ===== */
-
-const prevQuestion = () => {
-  if (currentIndex > 0) {
-    playSound(soundButton);
-    setCurrentIndex(currentIndex - 1);
-  }
-};
+  const prevQuestion = () => {
+    if (currentIndex > 0) {
+      playSound(soundButton);
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
 
   /* ===== TERMINAR ===== */
-
   const finishQuiz = () => {
     let correctCount = 0;
 
@@ -94,7 +97,6 @@ const prevQuestion = () => {
       }
     }, 100);
 
-    // Guardar resultado en la base de datos
     const payload = {
       theme,
       score: correctCount,
@@ -111,6 +113,67 @@ const prevQuestion = () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).catch(err => console.error("Error al guardar resultado:", err));
+  };
+
+  /* ===== LÓGICA DEL MANDO 🕹️ ===== */
+  useMando({
+    // Joystick Arriba: Sube en las opciones del cuestionario
+    onUp: () => {
+      if (!finished) {
+        playSound(soundButton);
+        if (selected === null || selected === 0) {
+          selectOption(currentQuestion.options.length - 1); // Va a la última opción
+        } else {
+          selectOption(selected - 1);
+        }
+      } else {
+        playSound(soundButton);
+        setFocoFinal(0); // En la pantalla final selecciona el botón de arriba
+      }
+    },
+    
+    // Joystick Abajo: Baja en las opciones del cuestionario
+    onDown: () => {
+      if (!finished) {
+        playSound(soundButton);
+        if (selected === null || selected === currentQuestion.options.length - 1) {
+          selectOption(0); // Vuelve a la primera opción
+        } else {
+          selectOption(selected + 1);
+        }
+      } else {
+        playSound(soundButton);
+        setFocoFinal(1); // En la pantalla final selecciona el botón de abajo
+      }
+    },
+
+    // Joystick Izquierda/Derecha (Para la pantalla final si los botones están lado a lado)
+    onLeft: () => { if (finished) { playSound(soundButton); setFocoFinal(0); } },
+    onRight: () => { if (finished) { playSound(soundButton); setFocoFinal(1); } },
+
+    // Botón 2 (Confirmar / Siguiente)
+    onButton2: () => {
+      if (!finished) {
+        nextQuestion(); // Tu función ya tiene el bloqueo de "selected === null"
+      } else {
+        playSound(soundButton);
+        // En la pantalla de resultados
+        if (focoFinal === 0) navigate(theme === "math" ? "/gameM" : "/gameR", { state: { theme } });
+        else navigate("/flashcards", { state: { theme } });
+      }
+    },
+
+    // Botón 1 (Regresar)
+    onButton1: () => {
+      if (!finished) prevQuestion();
+    }
+  });
+
+  // 🕹️ Función para estilos del mando en la pantalla final
+  const getFocusStyle = (index) => {
+    return focoFinal === index 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s" } 
+      : { transition: "all 0.2s" };
   };
 
   return (
@@ -197,22 +260,28 @@ const prevQuestion = () => {
 
             <div className="quiz-actions">
 
+              {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn primary"
-                onClick={() =>
+                onClick={() => {
+                  playSound(soundButton);
                   navigate(theme === "math" ? "/gameM" : "/gameR", {
                     state: { theme }
-                  })
-                }
+                  });
+                }}
+                style={getFocusStyle(0)}
               >
                 Ir al juego
               </button>
 
+              {/* 🕹️ Aplicamos el estilo de foco al botón */}
               <button
                 className="quiz-btn secondary"
-                onClick={() =>
-                  navigate("/flashcards", { state: { theme } })
-                }
+                onClick={() => {
+                  playSound(soundButton);
+                  navigate("/flashcards", { state: { theme } });
+                }}
+                style={getFocusStyle(1)}
               >
                 Ver flashcards
               </button>

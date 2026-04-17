@@ -3,7 +3,27 @@ import Card from "../components/Card";
 import OpponentHand from "../components/OpponentHand";
 import PlayerHand from "../components/PlayerHand";
 import GameHUD from "../components/GameHUD";
+import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 import "../css/game.css";
+
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundCard = new Audio("/sounds/flash.mp3");
+const soundCorrect = new Audio("/sounds/correcto.mp3");
+const soundWrong = new Audio("/sounds/equivocacion.mp3");
+const soundWin = new Audio("/sounds/retro_buena.mp3");
+const soundLose = new Audio("/sounds/retro_mala.mp3");
+
+// Se combinó la lógica de ambas ramas: permite mute y usa el sonido del botón por defecto
+const playSound = (sound = soundButton) => {
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
+};
 
 export default function GameR() {
   const [game, setGame] = useState(null);
@@ -12,6 +32,11 @@ export default function GameR() {
   const [userAnswer, setUserAnswer] = useState(null);
   const [modalMessage, setModalMessage] = useState(null);
   const [pendingChoice, setPendingChoice] = useState(null);
+
+  // 🕹️ ESTADOS PARA EL MANDO (Cursor Virtual)
+  // Zonas: "hand" (cartas), "actions" (botones), "question" (modal quiz), "choice" (modal comodín), "gameOver"
+  const [focusZone, setFocusZone] = useState("hand");
+  const [focusIndex, setFocusIndex] = useState(0);
 
   useEffect(() => {
     fetch("http://localhost:3005/recycling/start", { method: "POST" })
@@ -32,6 +57,91 @@ export default function GameR() {
     }, 1000);
     return () => clearInterval(interval);
   }, [game?.currentPlayer, game?.status]);
+
+  // 🔊 Efecto de sonido de victoria/derrota (De la rama main)
+  useEffect(() => {
+    if (game?.status === "gameOver") {
+      if (game.winner === "player") {
+        playSound(soundWin);
+      } else {
+        playSound(soundLose);
+      }
+    }
+  }, [game?.status]);
+
+  // 🕹️ Auto-gestión de las Zonas de Foco (De la rama Obed-Mando)
+  useEffect(() => {
+    if (selectedQuestion) { setFocusZone("question"); setFocusIndex(0); }
+    else if (pendingChoice) { setFocusZone("choice"); setFocusIndex(0); }
+    else if (game?.status === 'gameOver') { setFocusZone("gameOver"); setFocusIndex(0); }
+    else { setFocusZone("hand"); setFocusIndex(0); }
+  }, [selectedQuestion, pendingChoice, game?.status]);
+
+  // 🕹️ Prevenir que el índice se salga de rango si juegas una carta y tu mano se reduce
+  useEffect(() => {
+    if (focusZone === "hand" && game?.playerHand) {
+      if (focusIndex >= game.playerHand.length) {
+        setFocusIndex(Math.max(0, game.playerHand.length - 1));
+      }
+    }
+  }, [game?.playerHand, focusZone]);
+
+  /* ===== LÓGICA DEL MANDO 🕹️ ===== */
+  useMando({
+    onUp: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "question") setFocusIndex(prev => Math.max(0, prev - 1));
+      else if (focusZone === "hand") { setFocusZone("actions"); setFocusIndex(0); }
+    },
+    onDown: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "question") setFocusIndex(prev => Math.min(selectedQuestion.options.length - 1, prev + 1));
+      else if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
+    },
+    onLeft: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "hand") setFocusIndex(prev => Math.max(0, prev - 1));
+      else if (focusZone === "actions") setFocusIndex(0);
+      else if (focusZone === "choice") setFocusIndex(prev => Math.max(0, prev - 1));
+    },
+    onRight: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "hand") setFocusIndex(prev => Math.min(game.playerHand.length - 1, prev + 1));
+      else if (focusZone === "actions") setFocusIndex(1);
+      else if (focusZone === "choice") setFocusIndex(prev => Math.min(pendingChoice.options.length - 1, prev + 1));
+    },
+    onButton2: () => { // 🟢 BOTÓN CONFIRMAR
+      playSound();
+      if (game?.status === 'gameOver') {
+        window.location.reload();
+      } else if (focusZone === "question" && userAnswer === null) {
+        handleSubmitAnswer(focusIndex);
+      } else if (focusZone === "choice") {
+        handleChoice(pendingChoice.options[focusIndex]);
+      } else if (game?.currentPlayer === 'player') {
+        if (focusZone === "actions") {
+          if (focusIndex === 0) handleDrawCard();
+          else handleOpenQuestion();
+        } else if (focusZone === "hand") {
+          const cardToPlay = game.playerHand[focusIndex];
+          if (cardToPlay && canPlay(cardToPlay, game.topCard)) {
+            handlePlayCard(cardToPlay);
+          } else {
+            setModalMessage("⚠️ No puedes jugar esta carta ahora mismo.");
+            setTimeout(() => setModalMessage(null), 2000);
+          }
+        }
+      }
+    },
+    onButton1: () => { // 🔴 BOTÓN REGRESAR / CANCELAR
+      if (focusZone === "choice") setPendingChoice(null);
+      else if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
+      else if (focusZone === "question" && userAnswer === null) { setSelectedQuestion(null); setFocusZone("hand"); }
+    }
+  });
+
+  // 🕹️ Helper visual para elementos enfocados
+  const getFocusStyle = (isActive) => isActive ? { outline: "4px solid #4ade80", transform: "scale(1.08)", transition: "all 0.2s", zIndex: 10, boxShadow: "0 0 20px rgba(74, 222, 128, 0.6)" } : { transition: "all 0.2s" };
 
   if (loading || !game) return <div className="loading-screen"><h1>Cargando...</h1></div>;
 
@@ -117,7 +227,8 @@ export default function GameR() {
               <span style={{ color: '#f472b6' }}>🤖 Oponente: <strong style={{ color: '#e5e7eb', fontSize: '1.3rem' }}>{game.opponentHand.length}</strong></span>
             </div>
           )}
-          <button onClick={() => window.location.reload()} style={{ padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
+          {/* 🕹️ Aplicamos el foco al botón original de jugar de nuevo */}
+          <button onClick={() => { playSound(); window.location.reload(); }} style={{ ...getFocusStyle(focusZone === "gameOver"), padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
           <div style={{ marginTop: '35px', paddingTop: '25px', borderTop: `1px solid ${borderColor}`, opacity: 0.5, fontSize: '0.9rem', color: '#64748b', letterSpacing: '1px' }}>
             <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
           </div>
@@ -129,6 +240,7 @@ export default function GameR() {
 
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
+    playSound(soundCard);
     try {
       const res = await fetch("http://localhost:3005/recycling/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
       const data = await res.json();
@@ -163,6 +275,9 @@ export default function GameR() {
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
+
+    playSound(soundCard);
+
     const res = await fetch("http://localhost:3005/recycling/draw", { method: "POST" });
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
@@ -175,6 +290,9 @@ export default function GameR() {
 
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== 'player') return;
+
+    playSound(soundButton);
+
     if (game.freePlay) {
        const res = await fetch("http://localhost:3005/recycling/check-question-usage", { method: "POST" });
        const data = await res.json();
@@ -195,7 +313,6 @@ export default function GameR() {
     }
   };
 
-  // 🔥 CORRECCIÓN CRÍTICA AQUÍ: Actualización forzosa de vidas
   const handleSubmitAnswer = async (optionIndex) => {
     if (!selectedQuestion) return;
     setUserAnswer(optionIndex);
@@ -213,25 +330,25 @@ export default function GameR() {
         return;
       }
 
-      // 1. Actualizamos el estado del juego con los datos del servidor (incluyendo lives restadas)
       setGame(data);
 
-      // 2. Preparamos el mensaje
       let msg = "";
       if (data.questionResult === 'success') {
+        playSound(soundCorrect);
         msg = "✅ ¡Correcto!  MODO LIBRE ACTIVADO.";
       } else {
-        // Aquí es donde el servidor dice cuántas vidas quedan
+        // Se mantiene la lógica combinada: suena el error y muestra las vidas restantes
+        playSound(soundWrong); 
         const vidasRestantes = data.lives; 
         msg = `❌ Incorrecto. Pierdes 1 vida. Te quedan: ${vidasRestantes} ❤️`;
       }
       
       setModalMessage(msg);
 
-      // 3. Cerramos el modal de pregunta después de un breve delay
       setTimeout(() => { 
         setSelectedQuestion(null); 
         setModalMessage(null); 
+        setFocusZone("hand"); // Regresamos el foco a la mano
       }, 3000);
 
     } catch (err) {
@@ -256,7 +373,6 @@ export default function GameR() {
 
   return (
     <div className="game-container">
-      {/* GameHUD recibe game.lives directamente. Si game se actualiza, esto cambia. */}
       <GameHUD 
         deckCount={game.deck.length} 
         lives={game.lives} 
@@ -265,7 +381,7 @@ export default function GameR() {
         lastAction={game.lastAction} 
       />
       
-      {/* Panel de Información de Carta Actual */}
+      {/* Panel de Información de Carta Actual (Diseño Original Intacto) */}
       {game.topCard && (
         <div style={{
           position: 'absolute', top: '90px', right: '20px', width: '240px',
@@ -299,21 +415,49 @@ export default function GameR() {
       <div className="center-area">
         <div className="center-card">{game.topCard && <Card card={game.topCard} />}</div>
         <div className="controls">
-          <button className="draw-btn" onClick={handleDrawCard} disabled={game.currentPlayer !== 'player'}>Robar</button>
-          <button className="question-btn" onClick={handleOpenQuestion} disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0} style={{ opacity: game.freePlay ? 0.6 : 1 }}>
+          {/* 🕹️ Controles con getFocusStyle mantenido de la rama Obed-Mando */}
+          <button 
+            className="draw-btn" 
+            onClick={() => { playSound(); handleDrawCard(); }} 
+            disabled={game.currentPlayer !== 'player'}
+            style={getFocusStyle(focusZone === "actions" && focusIndex === 0)}
+          >
+            Robar
+          </button>
+          <button 
+            className="question-btn" 
+            onClick={() => { playSound(); handleOpenQuestion(); }} 
+            disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0} 
+            style={{ opacity: game.freePlay ? 0.6 : 1, ...getFocusStyle(focusZone === "actions" && focusIndex === 1) }}
+          >
             {game.freePlay ? "¡Modo Libre Activo!" : `Pregunta (${game.questionsLeft})`}
           </button>
         </div>
       </div>
-      <PlayerHand hand={game.playerHand} topCard={game.topCard} onPlay={handlePlayCard} canPlay={canPlay} currentPlayer={game.currentPlayer} />
+      
+      {/* 🕹️ Pasamos el focusedIndex al PlayerHand */}
+      <PlayerHand 
+        hand={game.playerHand} 
+        topCard={game.topCard} 
+        onPlay={(card) => { playSound(); handlePlayCard(card); }} 
+        canPlay={canPlay} 
+        currentPlayer={game.currentPlayer}
+        focusedIndex={focusZone === "hand" ? focusIndex : -1} 
+      />
 
       {pendingChoice && (
         <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
           <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #3b82f6', textAlign:'center', maxWidth:'400px', width:'90%'}}>
             <h3 style={{color:'#60a5fa', marginBottom:'1rem'}}>{pendingChoice.message}</h3>
             <div style={{display:'flex', gap:'10px', flexWrap:'wrap', justifyContent:'center'}}>
-              {pendingChoice.options.map(opt => (
-                <button key={opt} onClick={() => handleChoice(opt)} style={{padding:'10px 20px', background:'#3b82f6', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', textTransform:'capitalize'}}>{opt}</button>
+              {pendingChoice.options.map((opt, idx) => (
+                <button 
+                  key={opt} 
+                  onClick={() => { playSound(); handleChoice(opt); }} 
+                  style={{...getFocusStyle(focusZone === "choice" && focusIndex === idx), padding:'10px 20px', background:'#3b82f6', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', textTransform:'capitalize'}}
+                >
+                  {opt}
+                </button>
               ))}
             </div>
             <button onClick={() => setPendingChoice(null)} style={{marginTop:'20px', background:'transparent', border:'1px solid #ef4444', color:'#ef4444', padding:'5px 10px', borderRadius:'4px', cursor:'pointer'}}>Cancelar</button>
@@ -327,7 +471,14 @@ export default function GameR() {
             <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}>❓ {selectedQuestion.question}</h3>
             <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
               {selectedQuestion.options.map((opt, idx) => (
-                <button key={idx} onClick={() => handleSubmitAnswer(idx)} disabled={userAnswer !== null} style={{padding:'12px', background: userAnswer === idx ? (idx === selectedQuestion.correct ? '#22c55e' : '#ef4444') : '#334155', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold'}}>{opt}</button>
+                <button 
+                  key={idx} 
+                  onClick={() => { playSound(); handleSubmitAnswer(idx); }} 
+                  disabled={userAnswer !== null} 
+                  style={{...getFocusStyle(focusZone === "question" && focusIndex === idx && userAnswer === null), padding:'12px', background: userAnswer === idx ? (idx === selectedQuestion.correct ? '#22c55e' : '#ef4444') : '#334155', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold'}}
+                >
+                  {opt}
+                </button>
               ))}
             </div>
             {userAnswer !== null && <p style={{marginTop:'1rem'}}>{selectedQuestion.explanation}</p>}

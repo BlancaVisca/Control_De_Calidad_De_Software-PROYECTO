@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Menu from "./pages/Menu";
 import Flashcards from "./pages/Flashcards";
 import GameR from "./pages/GameR";
@@ -6,11 +6,10 @@ import GameM from "./pages/GameM";
 import Inicio from "./pages/Inicio";
 import Quiz from "./pages/Quiz";
 
-
-
-
-
 function App() {
+  // 🧹 ¡Adiós al setInterval y al fetch! 
+  // Ahora cada componente usará el hook useMando internamente.
+  
   return (
     <BrowserRouter>
       <Routes>
