@@ -5,6 +5,7 @@ import PlayerHandM from "../components/PlayerHandM";
 import GameHUD from "../components/GameHUD";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 import "../css/gameM.css";
+import RulesModalMath from "./RulesModalMath";
 
 // 🔊 SONIDOS 
 const soundButton = new Audio("/sounds/boton.mp3");
@@ -34,6 +35,8 @@ export default function GameM() {
   // 🕹️ ESTADOS PARA EL MANDO (Cursor Virtual)
   const [focusZone, setFocusZone] = useState("hand");
   const [focusIndex, setFocusIndex] = useState(0);
+
+  const [showRules, setShowRules] = useState(true);
 
   /* =========================
      START
@@ -467,6 +470,12 @@ export default function GameM() {
           </span>
         </div>
       )}
+
+      {showRules && (
+        <RulesModalMath onClose={() => setShowRules(false)} />
+      )}
+
     </div>
+
   );
 }

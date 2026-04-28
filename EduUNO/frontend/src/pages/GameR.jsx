@@ -5,6 +5,7 @@ import PlayerHand from "../components/PlayerHand";
 import GameHUD from "../components/GameHUD";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 import "../css/game.css";
+import RulesModalRec from "./RulesModalRec";
 
 // 🔊 SONIDOS
 const soundButton = new Audio("/sounds/boton.mp3");
@@ -37,6 +38,8 @@ export default function GameR() {
   // Zonas: "hand" (cartas), "actions" (botones), "question" (modal quiz), "choice" (modal comodín), "gameOver"
   const [focusZone, setFocusZone] = useState("hand");
   const [focusIndex, setFocusIndex] = useState(0);
+
+  const [showRules, setShowRules] = useState(true);
 
   useEffect(() => {
     fetch("http://localhost:3005/recycling/start", { method: "POST" })
@@ -491,6 +494,11 @@ export default function GameR() {
           {modalMessage} <span onClick={()=>setModalMessage(null)} style={{marginLeft:'10px', cursor:'pointer'}}>✕</span>
         </div>
       )}
+
+      {showRules && (
+        <RulesModalRec onClose={() => setShowRules(false)} />
+      )}
+
     </div>
   );
 }

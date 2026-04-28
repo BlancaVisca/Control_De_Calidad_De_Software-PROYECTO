@@ -250,10 +250,25 @@ export default function Quiz() {
 
             <h2 className="quiz-result-title">
               {passed
-                ? "🎉 ¡Estas listo para comenzar a jugar!"
-                : "😅 Uys, yo creo que deberías echarle un ojo de nuevo a las flashcards"}
+                ? "¡Estas listo para comenzar a jugar!"
+                : "Uys, yo creo que deberías echarle un ojo de nuevo a las flashcards"}
             </h2>
 
+
+
+
+            {/* ESTRELLAS */}
+            <div className="quiz-stars">
+              {Array.from({ length: 5 }, (_, i) => (
+                <span
+                  key={i}
+                  className={`quiz-star ${i < score ? "quiz-star--filled" : "quiz-star--empty"}`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            
             <p className="quiz-score">
               Puntaje: {score} / {questions.length}
             </p>
