@@ -221,3 +221,23 @@
 .quiz-container.math .quiz-dot.answered {
   background: #ff4d4d;
 }
+
+.back-menu-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+  transition: 0.25s;
+  z-index: 20;
+   box-shadow: 0 0 30px rgba(255, 255, 255, 0.762);
+}
+
+.back-menu-btn:hover {
+  background: rgba(59, 130, 246, 0.4);
+}

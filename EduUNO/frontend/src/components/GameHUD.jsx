@@ -4,6 +4,7 @@
  */
 
 import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 
 export default function GameHUD({ 
   deckCount, 
@@ -13,12 +14,12 @@ export default function GameHUD({
   turnInfo = '',
   lastAction = ''
 }) {
+  const navigate = useNavigate();
   
   return (
-    <header className="top-panel" role="banner" aria-label="Panel de información del juego">
+    <header className="game-hud" role="banner" aria-label="Panel de información del juego">
       
-      {/* ❤️ VIDAS 
-          🔥 CLAVE: Agregamos key={lives} para forzar a React a repaintear cuando cambia el número */}
+      {/* ❤️ VIDAS */}
       <div className="lives" key={`lives-container-${lives}`} aria-label={`Vidas restantes: ${lives} de 3`}>
         {[...Array(3)].map((_, index) => {
           const isLost = index >= lives;
@@ -27,9 +28,9 @@ export default function GameHUD({
               key={`vida-${index}`} 
               src="/img/vidas.png" 
               alt={isLost ? "Vida perdida" : "Vida activa"}
-              className={isLost ? 'lost' : ''} /* Aquí se aplica la clase que definimos en CSS */
+              className={isLost ? 'lost' : ''}
               title={isLost ? "💔 Vida perdida" : "❤️ Vida disponible"}
-              style={{ opacity: isLost ? 0 : 1, transition: 'opacity 0.3s ease' }} /* Estilo inline de respaldo */
+              style={{ opacity: isLost ? 0 : 1, transition: 'opacity 0.3s ease' }}
               loading="lazy"
             />
           );
@@ -62,10 +63,19 @@ export default function GameHUD({
 
       {/* 📝 ÚLTIMA ACCIÓN */}
       {lastAction && (
-        <small style={{ color: '#64748b', fontSize: '0.8rem', textAlign: 'center', marginTop: '5px' }} aria-live="polite">
+        <small style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center' }} aria-live="polite">
           {lastAction}
         </small>
       )}
+
+      {/* 🔙 REGRESAR AL MENÚ */}
+      <button
+        onClick={() => navigate('/menu')}
+        className="back-btn"
+      >
+        Regresar al menú
+      </button>
+
     </header>
   );
 }

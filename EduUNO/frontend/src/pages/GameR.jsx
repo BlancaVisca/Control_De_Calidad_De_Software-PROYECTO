@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import OpponentHand from "../components/OpponentHand";
 import PlayerHand from "../components/PlayerHand";
@@ -27,6 +28,7 @@ const playSound = (sound = soundButton) => {
 };
 
 export default function GameR() {
+    const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
@@ -185,7 +187,7 @@ export default function GameR() {
         shadowColor = "rgba(34, 197, 94, 0.35)";
         bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
       } else {
-        title = "😔 Perdiste";
+        title = "Perdiste";
         color = "#f87171";
       }
     } else if (game.reason === 'no_questions') {
@@ -196,14 +198,14 @@ export default function GameR() {
       shadowColor = "rgba(245, 158, 11, 0.35)";
       bgGradient = "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))";
     } else if (game.winner === 'player') {
-      title = "🎉 ¡GANASTE!";
+      title = "¡GANASTE!";
       subTitle = "El oponente se quedó sin cartas o vidas.";
       color = "#4ade80";
       borderColor = "rgba(34, 197, 94, 0.5)";
       shadowColor = "rgba(34, 197, 94, 0.35)";
       bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
     } else {
-      title = "💔 PERDISTE";
+      title = "PERDISTE";
       subTitle = game.lastAction || "Inténtalo de nuevo.";
       color = "#f87171";
     }
@@ -220,7 +222,7 @@ export default function GameR() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent), radial-gradient(2px 2px at 40% 70%, rgba(255,255,255,0.2), transparent)`, animation: 'twinkle 4s ease-in-out infinite' }} />
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '40px 30px', maxWidth: '650px', width: '90%', animation: 'gameOverPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
           <div style={{ fontSize: '5rem', marginBottom: '25px', animation: 'float 3s ease-in-out infinite', filter: `drop-shadow(0 0 30px ${shadowColor})`, display: 'inline-block' }}>
-            {game.winner === 'player' ? '🏆' : game.reason === 'no_questions' ? '❓' : '💔'}
+            {game.winner === 'player' ? '' : game.reason === 'no_questions' ? '' : ''}
           </div>
           <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '3.5rem', color: color, margin: '0 0 20px 0', textShadow: `0 0 40px ${shadowColor}`, letterSpacing: '3px', textTransform: 'uppercase', lineHeight: 1.1 }}>{title}</h1>
           <p style={{ fontSize: '1.3rem', color: '#cbd5e1', margin: '0 0 30px 0', lineHeight: 1.6, opacity: 0.95, maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>{subTitle}</p>
@@ -231,9 +233,57 @@ export default function GameR() {
             </div>
           )}
           {/* 🕹️ Aplicamos el foco al botón original de jugar de nuevo */}
-          <button onClick={() => { playSound(); window.location.reload(); }} style={{ ...getFocusStyle(focusZone === "gameOver"), padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
+
+
+<button
+  onClick={() => { playSound(); window.location.reload(); }}
+  style={{
+    ...getFocusStyle(focusZone === "gameOver"),
+    marginTop: '8px',
+    padding: '15px 67px',
+    background: 'linear-gradient(135deg, #a855f7, #22d3ee)',
+    border: 'none',
+    borderRadius: '22px',
+    color: '#020617',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '1.44rem',
+    fontWeight: '700',
+    letterSpacing: '3px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 8px 32px rgba(168, 85, 247, 0.45)',
+  }}
+  onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(168, 85, 247, 0.65)'; }}
+  onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(168, 85, 247, 0.45)'; }}
+>
+  Jugar de nuevo
+</button>
+
+<button
+onClick={() => navigate('/menu')}  style={{
+    marginTop: '8px',
+    padding: '15px 60px',
+    background: 'transparent',
+    border: '2px solid #22d3ee',
+    borderRadius: '22px',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '1.2rem',
+    fontWeight: '700',
+    color: '#22d3ee',
+    letterSpacing: '3px',
+    cursor: 'pointer',
+    opacity: '0.7',
+    transition: 'opacity 0.2s ease',
+  }}
+  onMouseOver={(e) => { e.currentTarget.style.opacity = '1'; }}
+  onMouseOut={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+>
+  Regresar al menú
+</button>
+
+
           <div style={{ marginTop: '35px', paddingTop: '25px', borderTop: `1px solid ${borderColor}`, opacity: 0.5, fontSize: '0.9rem', color: '#64748b', letterSpacing: '1px' }}>
-            <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
+            <span style={{ marginRight: '12px' }}>ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
           </div>
         </div>
         <style>{`@keyframes gameOverPopIn { 0% { opacity: 0; transform: scale(0.7) translateY(40px); } 100% { opacity: 1; transform: scale(1) translateY(0); } } @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(5deg); } } @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }`}</style>
@@ -383,6 +433,7 @@ export default function GameR() {
         currentPlayer={game.currentPlayer} 
         lastAction={game.lastAction} 
       />
+      {/* Botón Regresar */}
       
       {/* Panel de Información de Carta Actual (Diseño Original Intacto) */}
       {game.topCard && (
@@ -471,7 +522,7 @@ export default function GameR() {
       {selectedQuestion && (
         <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
           <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #f59e0b', maxWidth:'500px', width:'90%', textAlign:'center'}}>
-            <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}>❓ {selectedQuestion.question}</h3>
+            <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}> {selectedQuestion.question}</h3>
             <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
               {selectedQuestion.options.map((opt, idx) => (
                 <button 

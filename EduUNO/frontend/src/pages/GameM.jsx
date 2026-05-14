@@ -227,6 +227,9 @@ function FinalResult({ score, onRestart }) {
 
 /* ── COMPONENTE PRINCIPAL ── */
 export default function GameM() {
+
+    const navigate = useNavigate(); 
+
   const [showRules,     setShowRules]     = useState(true);
   const [challenges,    setChallenges]    = useState([]);
   const [roundIndex,    setRoundIndex]    = useState(0);
@@ -311,6 +314,16 @@ export default function GameM() {
 
   return (
     <div className="game-container gamem-new">
+
+
+      {/* 🔙 REGRESAR AL MENÚ */}
+      <button
+        className="back-btn"
+        onClick={() => navigate('/menu')}
+      >
+        Regresar al menú
+      </button>
+
       <div className="gamem-layout">
 
         {/* ── COL 1: CARTA ── */}

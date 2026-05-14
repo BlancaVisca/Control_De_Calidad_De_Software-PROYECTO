@@ -180,6 +180,16 @@ const getFocusStyle = (index) => {
   return (
     <div className={`quiz-container ${theme}`}>
 
+
+        {/* BOTÓN VOLVER */}
+      <button
+        className="back-menu-btn"
+        onClick={() => { playSound(soundButton); navigate('/menu'); }}
+      >
+        ← Volver al menú
+      </button>
+
+      
       {/* HEADER */}
       <header className="quiz-header">
         <h1 className="quiz-title">
