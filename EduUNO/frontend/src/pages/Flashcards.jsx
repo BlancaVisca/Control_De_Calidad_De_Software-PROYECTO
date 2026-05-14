@@ -175,11 +175,12 @@ export default function Flashcards() {
   }, [currentIndex]);
 
   // Función para dar estilo visual al elemento enfocado por el mando
-  const getFocusStyle = (target) => {
-    return focoEspecial === target 
-      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s" } 
-      : { transition: "all 0.2s" };
-  };
+const getFocusStyle = (target) => {
+  const outlineColor = theme === "math" ? "#ff4d4d" : "#4ade80";
+  return focoEspecial === target 
+    ? { outline: `4px solid ${outlineColor}`, transform: "scale(1.05)", transition: "all 0.2s" } 
+    : { transition: "all 0.2s" };
+};
 
   return (
     <div className={`container ${theme}`}>

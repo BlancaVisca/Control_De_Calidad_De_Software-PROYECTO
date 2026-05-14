@@ -170,11 +170,12 @@ export default function Quiz() {
   });
 
   // 🕹️ Función para estilos del mando en la pantalla final
-  const getFocusStyle = (index) => {
-    return focoFinal === index 
-      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s" } 
-      : { transition: "all 0.2s" };
-  };
+const getFocusStyle = (index) => {
+  const outlineColor = theme === "math" ? "#ff4d4d" : "#4ade80";
+  return focoFinal === index 
+    ? { outline: `4px solid ${outlineColor}`, transform: "scale(1.05)", transition: "all 0.2s" } 
+    : { transition: "all 0.2s" };
+};
 
   return (
     <div className={`quiz-container ${theme}`}>

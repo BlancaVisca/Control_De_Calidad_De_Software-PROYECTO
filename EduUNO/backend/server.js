@@ -6,7 +6,6 @@ const questions = require("./questions");
 const db = require("./db");
 
 const mathEngine = require("./gameEngineMath");
-const questionsM = require("./questionsM");
 
 const app = express();
 app.use(cors());
@@ -156,31 +155,6 @@ recyclingRouter.post("/check-question-usage", (req, res) => {
 
 recyclingRouter.get("/status", (req, res) => res.json(gameStateR));
 
-function handleEmptyDeckR(res) {
-  const playerCount = gameStateR.playerHand.length;
-  const opponentCount = gameStateR.opponentHand.length;
-
-  let winner, messageTitle;
-
-  if (playerCount < opponentCount) {
-    winner = "player";
-    messageTitle = "Ganaste";
-  } else if (opponentCount < playerCount) {
-    winner = "opponent";
-    messageTitle = "Perdiste :( vuelve a intentarlo";
-  } else {
-    winner = "player";
-    messageTitle = "Ganaste";
-  }
-
-  gameStateR.status = "gameOver";
-  gameStateR.winner = winner;
-  gameStateR.reason = "empty_deck";
-  gameStateR.lastAction = messageTitle;
-  gameStateR.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
-
-  return res.json(gameStateR);
-}
 
 function makeOpponentMoveR() {
   if (gameStateR.status === "gameOver") return;
@@ -299,86 +273,14 @@ mathRouter.post("/start", (req, res) => {
   res.json(gameStateM);
 });
 
-mathRouter.post("/play", (req, res) => {
-  const { card } = req.body;
-  const result = mathEngine.playCard(gameStateM, card, "player");
 
-  if (result.error) {
-    return res.status(400).json({ error: result.error });
-  }
 
-  gameStateM = result;
 
-  if (gameStateM.status !== "gameOver" && gameStateM.currentPlayer === "opponent") {
-    setTimeout(makeOpponentMoveM, 800);
-  }
 
-  res.json(gameStateM);
-});
-
-mathRouter.post("/draw", (req, res) => {
-  const result = mathEngine.drawCardLogic(gameStateM, "player");
-
-  if (result.error === "MAZO_VACIO_FINAL") {
-    return handleEmptyDeckM(res);
-  }
-
-  gameStateM = result;
-  res.json(gameStateM);
-});
-
-mathRouter.get("/question", (req, res) => {
-  if (gameStateM.questionsLeft <= 0) {
-    gameStateM.status = "gameOver";
-    gameStateM.winner = "opponent";
-    gameStateM.reason = "no_questions";
-    return res.json(gameStateM);
-  }
-
-  const q = questionsM[Math.floor(Math.random() * questionsM.length)];
-  res.json(q);
-});
-
-mathRouter.post("/answer-question", (req, res) => {
-  const { questionId, selectedOption } = req.body;
-  const q = questionsM.find(x => x.id === questionId);
-  if (!q) return res.status(400).json({ error: "Pregunta inválida" });
-
-  const correct = selectedOption === q.correct;
-
-  if (correct) {
-    gameStateM.freePlay = true;
-    gameStateM.questionsLeft--;
-    gameStateM.lastAction = "✅ Correcto - Modo libre";
-  } else {
-    gameStateM.lives--;
-    gameStateM.lastAction = `❌ Incorrecto (${gameStateM.lives} vidas)`;
-
-    if (gameStateM.lives <= 0) {
-      gameStateM.status = "gameOver";
-      gameStateM.winner = "opponent";
-    }
-  }
-
-  res.json({
-    ...gameStateM,
-    questionResult: correct ? "success" : "fail",
-    explanation: q.explanation
-  });
-});
 
 mathRouter.get("/status", (req, res) => res.json(gameStateM));
 
-function handleEmptyDeckM(res) {
-  const player = gameStateM.playerHand.length;
-  const opponent = gameStateM.opponentHand.length;
 
-  gameStateM.status = "gameOver";
-  gameStateM.winner = player <= opponent ? "player" : "opponent";
-  gameStateM.reason = "empty_deck";
-
-  res.json(gameStateM);
-}
 
 function makeOpponentMoveM() {
   if (gameStateM.status === "gameOver") return;

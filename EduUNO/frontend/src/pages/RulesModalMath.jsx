@@ -4,7 +4,7 @@ import "../css/RulesModal.css";
 export default function RulesModalMath({ onClose }) {
   const [page, setPage] = useState(0);
 
-  const titles = ["Reglas del juego", "Vidas, ayudas y objetivo"];
+  const titles = ["Cómo se juega", "Ejemplo y consejos"];
 
   return (
     <div className="rules-overlay">
@@ -19,62 +19,106 @@ export default function RulesModalMath({ onClose }) {
 
         {page === 0 && (
           <div>
-            <p className="rules-section-title">Cómo conectar cartas</p>
-            <div className="rules-box">
-              <p>Coloca una carta sobre otra si tienen relación matemática. Puedes conectar cartas por:</p>
-              <ul className="rules-list">
-                <li>Pendiente (m)</li>
-                <li>Tipo de gráfica</li>
-                <li>Ecuación equivalente</li>
-              </ul>
+
+            <div className="rules-box" style={{ borderLeft: "4px solid #f0c040", background: "rgba(240,192,64,0.07)" }}>
+              <p>
+                Cada ronda te muestra una carta matemática — puede ser una <strong>ecuación</strong>,
+                una <strong>pendiente</strong> o un <strong>tipo de recta</strong>. Tu misión es rotar
+                la línea en pantalla hasta que coincida con lo que describe la carta.
+              </p>
             </div>
 
-            <p className="rules-section-title">Ejemplo de conexión</p>
-            <div className="rules-box-row">
-              <div className="rules-card-img">
-                <img src="/img/cartas_M/x_2.png" alt="Carta en mesa" />
-                <span>Carta en mesa</span>
+            <p className="rules-section-title">Paso a paso</p>
+            <div className="rules-box">
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <span style={{ fontWeight: "bold", minWidth: "22px", color: "#f0c040" }}>1.</span>
+                  <p style={{ margin: 0 }}>
+                    <strong>Observa la carta con atención.</strong> Lee si tiene una ecuación como
+                    <em> y = 2x + 1</em>, solo una pendiente como <em>m = -3</em>, o describe
+                    el tipo de recta, por ejemplo "decreciente". Cada detalle cambia la respuesta.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <span style={{ fontWeight: "bold", minWidth: "22px", color: "#f0c040" }}>2.</span>
+                  <p style={{ margin: 0 }}>
+                    <strong>Usa los botones de rotación.</strong> Tienes tres opciones:
+                    <strong> 45°</strong>, <strong>90°</strong> y <strong>180°</strong>. Cada
+                    toque gira la línea en sentido de las manecillas del reloj. Puedes
+                    combinarlos las veces que necesites.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <span style={{ fontWeight: "bold", minWidth: "22px", color: "#f0c040" }}>3.</span>
+                  <p style={{ margin: 0 }}>
+                    <strong>Confirma cuando estés seguro.</strong> Una vez que la línea tenga
+                    la orientación correcta, presiona confirmar. No hay correcciones ni segundos
+                    intentos, así que piensa bien antes de responder.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  <span style={{ fontWeight: "bold", minWidth: "22px", color: "#f0c040" }}>4.</span>
+                  <p style={{ margin: 0 }}>
+                    <strong>Recibe tu calificación al final.</strong> La partida tiene exactamente
+                    <strong> 5 cartas</strong>. Al terminar verás cuántas acertaste y ganarás de
+                    <strong> 1 a 5 estrellas</strong> según tu desempeño.
+                  </p>
+                </div>
+
               </div>
-              <div className="rules-card-img">
-                <img src="/img/cartas_M/funcion_lineal.png" alt="Carta compatible" />
-                <span>Carta compatible</span>
-              </div>
             </div>
-            <div className="rules-box">
-<p>Ejemplo: <strong>y = x - 2</strong> es una <strong>función lineal creciente</strong>, por lo tanto conecta con cualquier carta de <strong>recta creciente</strong> o con la misma pendiente.</p>            </div>
 
-            <hr className="rules-divider" />
-
-            <p className="rules-section-title">Regla general</p>
-            <div className="rules-box">
-              <p>Recibes 7 cartas. Si no puedes conectar ninguna, roba 1 carta. Gana quien se quede sin cartas primero. Si el mazo se termina, gana quien tenga menos cartas.</p>
-            </div>
           </div>
         )}
 
         {page === 1 && (
           <div>
-            <p className="rules-section-title">Vidas</p>
-            <div className="rules-box">
-              <p>Tienes <strong>3 vidas</strong>. Si fallas una pregunta, pierdes una vida.</p>
+
+            <p className="rules-section-title">Ejemplo de coincidencia</p>
+            <div className="rules-box-row">
+              <div className="rules-card-img">
+                <img src="/img/cartas_M/reglas1.png" alt="Carta con ecuación" />
+                <span>Ecuación en carta
+</span>
+              </div>
+              <div className="rules-card-img">
+                <img src="/img/cartas_M/reglas2.png" alt="Línea orientada correctamente" />
+                <span>Orientación correcta</span>
+              </div>
             </div>
 
-            <p className="rules-section-title">Preguntas educativas y modo libre</p>
-            <div className="rules-box">
-              <p>Puedes usar las preguntas educativas para activar el <strong>Modo Libre</strong>, que te permite jugar cualquier carta ese turno. Pero cuidado: si te equivocas en la pregunta, pierdes una vida.</p>
+            <div className="rules-box" style={{ borderLeft: "4px solid #5ec8a0", background: "rgba(94,200,160,0.07)" }}>
+              <p>
+                La carta muestra la ecuación de una <strong>circunferencia</strong>. La orientación
+                correcta es una línea que forma un <strong>círculo centrado en el origen</strong>.
+                Identifica el tipo de curva y orienta la línea para que coincida.
+              </p>
             </div>
 
             <hr className="rules-divider" />
 
-            <p className="rules-section-title">Objetivo</p>
-            <div className="rules-box">
-              <p>Gana quien se quede sin cartas primero. Si el mazo se termina antes, gana quien tenga menos cartas. Piensa rápido y conecta correctamente.</p>
+            <p className="rules-section-title">Para tener en cuenta</p>
+            <div className="rules-box" style={{ borderLeft: "4px solid #a78bfa", background: "rgba(167,139,250,0.07)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <p style={{ margin: 0 }}>
+                  <strong>Pendiente positiva</strong> — la recta sube de izquierda a derecha.
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Pendiente negativa</strong> — la recta baja de izquierda a derecha.
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Pendiente cero</strong> — la recta es completamente horizontal.
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Pendiente indefinida</strong> — la recta es completamente vertical.
+                </p>
+              </div>
             </div>
 
-            <p className="rules-section-title">Consejo</p>
-            <div className="rules-box">
-              <p>Recuerda las propiedades de cada función: pendiente, tipo de curva y forma de la ecuación. Eso es lo que determina si dos cartas conectan.</p>
-            </div>
           </div>
         )}
 
@@ -84,7 +128,7 @@ export default function RulesModalMath({ onClose }) {
             onClick={() => setPage(p => p - 1)}
             disabled={page === 0}
           >
-            ← Anterior
+            Anterior
           </button>
           <div className="rules-dots">
             <span className={`rules-dot ${page === 0 ? "active" : ""}`} />
@@ -94,7 +138,7 @@ export default function RulesModalMath({ onClose }) {
             className="rules-btn primary"
             onClick={() => page === 1 ? onClose() : setPage(p => p + 1)}
           >
-            {page === 1 ? "¡Entendido!" : "Siguiente →"}
+            {page === 1 ? "Entendido" : "Siguiente"}
           </button>
         </div>
 
