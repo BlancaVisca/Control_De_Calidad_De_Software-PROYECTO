@@ -13,7 +13,7 @@ udpServer.on('message', (msg, rinfo) => {
   io.emit("mando_estado", data); 
 });
 
-udpServer.bind(4210); 
+udpServer.bind(4210, '0.0.0.0'); 
 console.log("📡 Servidor UDP escuchando para el mando inalámbrico");
 
 const { createDeck, drawCardLogic, playCard, COLORS, RECICLES } = require("./gameEngine");
