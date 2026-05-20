@@ -2,22 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http"); // 🔌 Requerido para Socket.io
 const { Server } = require("socket.io"); // 🔌 Requerido para Socket.io
-const { SerialPort, ReadlineParser } = require("serialport"); // 🕹️ Requerido para el mando
-const dgram = require('dgram');
-const udpServer = dgram.createSocket('udp4');
-
-// Escuchamos en el mismo puerto que definimos en Arduino
-udpServer.on('message', (msg, rinfo) => {
-  const data = msg.toString();
-  // Retransmitimos a React por el WebSocket que ya tenemos
-  io.emit("mando_estado", data); 
-});
-
-udpServer.bind(4210, '0.0.0.0'); 
-console.log("📡 Servidor UDP escuchando para el mando inalámbrico");
+const { SerialPort, ReadlineParser } = require("serialport"); // 🕹️ Requerido para el mando por cable
+const dgram = require('dgram'); // 📡 Requerido para el mando por WiFi
 
 const { createDeck, drawCardLogic, playCard, COLORS, RECICLES } = require("./gameEngine");
 const questions = require("./questions");
+const db = require("./db");
+
+const mathEngine = require("./gameEngineMath");
+const questionsM = require("./questionsM"); // Restaurado para el juego de matemáticas
 
 const app = express();
 // 🔌 Creamos el servidor HTTP envolviendo la app de Express
@@ -29,27 +22,40 @@ app.use(express.json());
 const PORT = Number(process.env.PORT) || 3005;
 const HOST = process.env.HOST || "127.0.0.1";
 
-// ===============================
-// 🔌 CONFIGURACIÓN DE WEBSOCKETS
-// ===============================
+/* ==========================================================
+   🔌 CONFIGURACIÓN DE WEBSOCKETS (REACT)
+========================================================== */
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // El puerto de tu frontend en Vite
+    origin: "http://localhost:5173", 
     methods: ["GET", "POST"]
   }
 });
 
 io.on("connection", (socket) => {
   console.log("🔌 Frontend (React) conectado por WebSockets:", socket.id);
-  
   socket.on("disconnect", () => {
     console.log("🔌 Frontend desconectado");
   });
 });
 
-// ===============================
-// 🕹️ CONFIGURACIÓN DEL MANDO (SERIAL)
-// ===============================
+/* ==========================================================
+   📡 CONFIGURACIÓN UDP (MANDO WIFI)
+========================================================== */
+const udpServer = dgram.createSocket('udp4');
+
+udpServer.on('message', (msg, rinfo) => {
+  const data = msg.toString();
+  // Retransmitimos a React por el WebSocket
+  io.emit("mando_estado", data); 
+});
+
+udpServer.bind(4210, '0.0.0.0'); 
+console.log("📡 Servidor UDP escuchando para el mando inalámbrico");
+
+/* ==========================================================
+   🕹️ CONFIGURACIÓN DEL MANDO (SERIAL - Backup por cable)
+========================================================== */
 const PUERTO_ESP32 = "COM7"; 
 
 const port = new SerialPort({
@@ -58,21 +64,24 @@ const port = new SerialPort({
   autoOpen: true
 }, (err) => {
   if (err) {
-    console.log("⚠️ Error al abrir el puerto serial del mando (¿Está conectada la ESP32?):", err.message);
+    console.log("⚠️ Info: Cable serial no detectado (Ignorar si se usa WiFi).");
   }
 });
 
 const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
-// Cada vez que la ESP32 envía una línea por el cable, la retransmitimos a React al instante
 parser.on("data", (data) => {
-  // data se ve así: "U:0,D:0,L:1,R:0,B1:1,B2:0"
   io.emit("mando_estado", data); 
 });
 
-// ===============================
-// LÓGICA DEL JUEGO
-// ===============================
+/* ==========================================================
+   ESTADO EN MEMORIA — uno por modo de juego
+========================================================== */
+let gameStateR = {};
+let gameStateM = {};
+
+/* ==========================================================
+   FLASHCARDS (Ruta global)
+========================================================== */
 const flashcards = [
   {
     id: "organic",
@@ -92,39 +101,46 @@ app.get("/flashcards", (req, res) => {
   res.json(flashcards);
 });
 
-let gameState = {};
+/* ==========================================================
+   ♻️ ROUTER — RECICLAJE  (/recycling/*)
+========================================================== */
+const recyclingRouter = express.Router();
 
-app.post("/start", (req, res) => {
-  try {
-    const deck = createDeck();
-    gameState = {
-      playerHand: deck.splice(0, 7),
-      opponentHand: deck.splice(0, 7),
-      topCard: deck.pop(),
-      deck,
-      discardPile: [],
-      currentPlayer: "player",
-      drawnCards: 0,
-      consecutiveDraws: 0,
-      lives: 3,
-      questionsLeft: 3,
-      status: 'playing',
-      lastAction: "¡Inicio! Tu turno.",
-      specialRule: null,
-      freePlay: false,
-      lastUsedQuestionTurn: -1
-    };
-    console.log("Juego creado correctamente");
-    res.json(gameState);
-  } catch (error) {
-    console.error("ERROR creando juego:", error);
-    res.status(500).json({ error: "Error creando juego" });
-  }
+function handleEmptyDeckR(res) {
+  const playerCount = gameStateR.playerHand.length;
+  const opponentCount = gameStateR.opponentHand.length;
+  gameStateR.status = "gameOver";
+  gameStateR.winner = opponentCount < playerCount ? "opponent" : "player";
+  gameStateR.reason = "empty_deck";
+  gameStateR.lastAction = gameStateR.winner === "player" ? "Ganaste" : "Perdiste :( vuelve a intentarlo";
+  gameStateR.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
+  return res.json(gameStateR);
+}
+
+recyclingRouter.post("/start", (req, res) => {
+  const deck = createDeck();
+  gameStateR = {
+    playerHand: deck.splice(0, 7),
+    opponentHand: deck.splice(0, 7),
+    topCard: deck.pop(),
+    deck,
+    discardPile: [],
+    currentPlayer: "player",
+    consecutiveDraws: 0,
+    lives: 3,
+    questionsLeft: 3,
+    status: "playing",
+    lastAction: "¡Inicio! Tu turno.",
+    specialRule: null,
+    freePlay: false,
+    lastUsedQuestionTurn: -1
+  };
+  res.json(gameStateR);
 });
 
-app.post("/play", (req, res) => {
+recyclingRouter.post("/play", (req, res) => {
   const { card, chosenColor, chosenRecycle } = req.body;
-  const result = playCard(gameState, card, "player", chosenColor, chosenRecycle);
+  const result = playCard(gameStateR, card, "player", chosenColor, chosenRecycle);
 
   if (result.error) {
     return res.status(400).json({ error: result.error });
@@ -136,149 +152,112 @@ app.post("/play", (req, res) => {
       choiceType: result.needsChoice,
       cardId: result.cardId,
       message: result.message,
-      availableOptions: result.needsChoice === 'color' ? COLORS : RECICLES,
+      availableOptions: result.needsChoice === "color" ? COLORS : RECICLES,
       currentTurn: "player"
     });
   }
 
-  gameState = result;
-  if (!gameState.freePlay) gameState.lastUsedQuestionTurn = -1;
+  gameStateR = result;
+  if (!gameStateR.freePlay) gameStateR.lastUsedQuestionTurn = -1;
 
-  if (gameState.status !== 'gameOver' && gameState.currentPlayer === 'opponent') {
-    setTimeout(() => makeOpponentMove(), 1000);
+  if (gameStateR.status !== "gameOver" && gameStateR.currentPlayer === "opponent") {
+    setTimeout(() => makeOpponentMoveR(), 1000);
   }
 
-  res.json(gameState);
+  res.json(gameStateR);
 });
 
-app.post("/draw", (req, res) => {
-  try {
-    let resState = drawCardLogic(gameState, "player");
-    
-    // DETECCIÓN DE MAZO VACÍO FINAL (SIN REGENERACIÓN)
-    if (resState.error === "MAZO_VACIO_FINAL" || resState.error) {
-      return handleEmptyDeckGameOver(res);
-    }
-    
-    gameState = resState;
-    gameState.consecutiveDraws = (gameState.consecutiveDraws || 0) + 1;
-    if (gameState.consecutiveDraws >= 3) {
-      gameState.lastAction = "⚠️ 3 cartas robadas. ¡Usa Pregunta Educativa!";
-    }
-    res.json(gameState);
-  } catch (error) {
-    console.error("Error al robar carta:", error);
-    res.status(500).json({ error: "Error al robar carta" });
+recyclingRouter.post("/draw", (req, res) => {
+  let resState = drawCardLogic(gameStateR, "player");
+
+  if (resState.error === "MAZO_VACIO_FINAL" || resState.error) {
+    return handleEmptyDeckR(res);
   }
+
+  gameStateR = resState;
+  gameStateR.consecutiveDraws = (gameStateR.consecutiveDraws || 0) + 1;
+  if (gameStateR.consecutiveDraws >= 3) {
+    gameStateR.lastAction = "⚠️ 3 cartas robadas. ¡Usa Pregunta Educativa!";
+  }
+  res.json(gameStateR);
 });
 
-// FUNCIÓN PARA MANEJAR FIN POR MAZO VACÍO
-function handleEmptyDeckGameOver(res) {
-  const playerCount = gameState.playerHand.length;
-  const opponentCount = gameState.opponentHand.length;
-  
-  let winner = '';
-  let messageTitle = '';
-  
-  // Regla: Gana quien tenga MENOS cartas
-  if (playerCount < opponentCount) {
-    winner = 'player';
-    messageTitle = "Ganaste";
-  } else if (opponentCount < playerCount) {
-    winner = 'opponent';
-    messageTitle = "Perdiste :( vuelve a intentarlo";
-  } else {
-    // Empate técnico
-    winner = 'player'; 
-    messageTitle = "Ganaste"; // Damos ventaja al jugador en empate
+recyclingRouter.get("/question", (req, res) => {
+  if (gameStateR.freePlay) {
+    return res.status(400).json({ error: "Ya estás en modo libre. ¡Juega una carta!" });
   }
 
-  gameState.status = 'gameOver';
-  gameState.winner = winner;
-  gameState.reason = 'empty_deck';
-  // Mensaje compuesto para el frontend
-  gameState.lastAction = messageTitle; 
-  gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
-  
-  return res.json(gameState);
-}
+  if (gameStateR.questionsLeft <= 0) {
+    gameStateR.status = "gameOver";
+    gameStateR.winner = "opponent";
+    gameStateR.reason = "no_questions";
+    gameStateR.lastAction = "Has perdido intentalo de nuevo";
+    return res.json(gameStateR);
+  }
 
-app.get("/question", (req, res) => {
-  if (gameState.freePlay) {
-     return res.status(400).json({ error: "Ya estás en modo libre. ¡Juega una carta!" });
-  }
-  
-  if (gameState.questionsLeft <= 0) {
-    gameState.status = 'gameOver';
-    gameState.winner = 'opponent';
-    gameState.reason = 'no_questions';
-    gameState.lastAction = "Has perdido intentalo de nuevo";
-    return res.json(gameState);
-  }
-  
   const q = questions[Math.floor(Math.random() * questions.length)];
   res.json(q);
 });
 
-app.post("/answer-question", (req, res) => {
+recyclingRouter.post("/answer-question", (req, res) => {
   const { questionId, selectedOption } = req.body;
   const q = questions.find(x => x.id === questionId);
-  if (!q) return res.status(400).json({error: "Inválida"});
+  if (!q) return res.status(400).json({ error: "Inválida" });
 
   const isCorrect = selectedOption === q.correct;
 
   if (isCorrect) {
-    gameState.questionsLeft--;
-    gameState.consecutiveDraws = 0;
-    gameState.freePlay = true;
-    gameState.lastUsedQuestionTurn = Date.now();
-    gameState.lastAction = "✅ ¡Correcto! MODO LIBRE: Tira cualquier carta.";
+    gameStateR.questionsLeft--;
+    gameStateR.consecutiveDraws = 0;
+    gameStateR.freePlay = true;
+    gameStateR.lastUsedQuestionTurn = Date.now();
+    gameStateR.lastAction = "✅ ¡Correcto! MODO LIBRE: Tira cualquier carta.";
   } else {
-    gameState.lives -= 1;
-    gameState.lastAction = `❌ Incorrecto. Pierdes 1 vida. (${gameState.lives} restantes)`;
-    
-    if (gameState.lives <= 0) {
-      gameState.status = 'gameOver';
-      gameState.winner = 'opponent';
-      gameState.reason = 'no_lives';
-      gameState.lastAction = "Has perdido intentalo de nuevo";
+    gameStateR.lives -= 1;
+    gameStateR.lastAction = `❌ Incorrecto. Pierdes 1 vida. (${gameStateR.lives} restantes)`;
+
+    if (gameStateR.lives <= 0) {
+      gameStateR.status = "gameOver";
+      gameStateR.winner = "opponent";
+      gameStateR.reason = "no_lives";
+      gameStateR.lastAction = "Has perdido intentalo de nuevo";
     }
   }
-  
-  res.json({ ...gameState, questionResult: isCorrect ? 'success' : 'fail', explanation: q.explanation });
+
+  res.json({ ...gameStateR, questionResult: isCorrect ? "success" : "fail", explanation: q.explanation });
 });
 
-app.post("/check-question-usage", (req, res) => {
-   if (gameState.freePlay) {
-       gameState.lives -= 1;
-       gameState.lastAction = "¡Uso indebido del comodín! Pierdes 1 vida.";
-       if (gameState.lives <= 0) {
-          gameState.status = 'gameOver';
-          gameState.winner = 'opponent';
-          gameState.reason = 'no_lives';
-          gameState.lastAction = "Has perdido intentalo de nuevo";
-       }
-       return res.json({ allowed: false, lives: gameState.lives, status: gameState.status, lastAction: gameState.lastAction });
-   }
-   return res.json({ allowed: true });
-});
-
-app.get("/status", (req, res) => res.json(gameState));
-
-function makeOpponentMove() {
-  if (gameState.status === 'gameOver') return;
-  if (gameState.currentPlayer !== 'opponent') return;
-
-  const hand = gameState.opponentHand;
-  const top = gameState.topCard;
-  
-  let playableCard = hand.find(c => {
-    if (c.type === 'wild') return true;
-    if (gameState.specialRule === 'skipRecycle') {
-       return c.color === top.color || c.number === top.number;
+recyclingRouter.post("/check-question-usage", (req, res) => {
+  if (gameStateR.freePlay) {
+    gameStateR.lives -= 1;
+    gameStateR.lastAction = "¡Uso indebido del comodín! Pierdes 1 vida.";
+    if (gameStateR.lives <= 0) {
+      gameStateR.status = "gameOver";
+      gameStateR.winner = "opponent";
+      gameStateR.reason = "no_lives";
+      gameStateR.lastAction = "Has perdido intentalo de nuevo";
     }
-    if (gameState.freePlay) return true;
-    return (c.recycle === top.recycle && c.number === top.number) || 
+    return res.json({ allowed: false, lives: gameStateR.lives, status: gameStateR.status, lastAction: gameStateR.lastAction });
+  }
+  return res.json({ allowed: true });
+});
+
+recyclingRouter.get("/status", (req, res) => res.json(gameStateR));
+
+function makeOpponentMoveR() {
+  if (gameStateR.status === "gameOver") return;
+  if (gameStateR.currentPlayer !== "opponent") return;
+
+  const hand = gameStateR.opponentHand;
+  const top = gameStateR.topCard;
+
+  let playableCard = hand.find(c => {
+    if (c.type === "wild") return true;
+    if (gameStateR.specialRule === "skipRecycle") {
+      return c.color === top.color || c.number === top.number;
+    }
+    if (gameStateR.freePlay) return true;
+    return (c.recycle === top.recycle && c.number === top.number) ||
            (c.recycle === top.recycle && c.color === top.color);
   });
 
@@ -287,100 +266,308 @@ function makeOpponentMove() {
     let sendRecycle = null;
     let choiceMessage = "";
 
-    if (playableCard.type === 'wild') {
-       const rColor = COLORS[Math.floor(Math.random() * COLORS.length)];
-       const rRecycle = RECICLES[Math.floor(Math.random() * RECICLES.length)];
+    if (playableCard.type === "wild") {
+      const rColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const rRecycle = RECICLES[Math.floor(Math.random() * RECICLES.length)];
 
-       if (playableCard.effect === 'changeColor') {
-         sendColor = rColor;
-         choiceMessage = ` y eligió color **${rColor.toUpperCase()}**`;
-       } 
-       else if (playableCard.effect === 'changeRecycle') {
-         sendRecycle = rRecycle;
-         let recycleDisplay = rRecycle === 'noreciclable' ? 'NO RECICLABLE' : rRecycle.toUpperCase();
-         choiceMessage = ` y eligió reciclaje **${recycleDisplay}**`;
-       } 
-       else if (playableCard.effect === 'drawFour') {
-         sendColor = rColor;
-         choiceMessage = ` (Color: **${rColor.toUpperCase()}**) ¡Roba 4!`;
-       }
-       else if (playableCard.effect === 'skipRecycle') {
-         choiceMessage = " (¡Solo importa Color y Número!)";
-       }
+      if (playableCard.effect === "changeColor") {
+        sendColor = rColor;
+        choiceMessage = ` y eligió color **${rColor.toUpperCase()}**`;
+      } else if (playableCard.effect === "changeRecycle") {
+        sendRecycle = rRecycle;
+        const recycleDisplay = rRecycle === "noreciclable" ? "NO RECICLABLE" : rRecycle.toUpperCase();
+        choiceMessage = ` y eligió reciclaje **${recycleDisplay}**`;
+      } else if (playableCard.effect === "drawFour") {
+        sendColor = rColor;
+        choiceMessage = ` (Color: **${rColor.toUpperCase()}**) ¡Roba 4!`;
+      } else if (playableCard.effect === "skipRecycle") {
+        choiceMessage = " (¡Solo importa Color y Número!)";
+      }
     }
 
-    const result = playCard(gameState, playableCard, "opponent", sendColor, sendRecycle);
-    
+    const result = playCard(gameStateR, playableCard, "opponent", sendColor, sendRecycle);
+
     if (!result.error && !result.needsChoice) {
-      gameState = result;
+      gameStateR = result;
       let finalMsg = `🤖 Oponente jugó ${playableCard.name}`;
       if (choiceMessage) finalMsg += choiceMessage;
-      
-      if (gameState.currentPlayer === 'opponent') {
-        gameState.lastAction = finalMsg + " → Juega de nuevo.";
-        setTimeout(makeOpponentMove, 1200);
+
+      if (gameStateR.currentPlayer === "opponent") {
+        gameStateR.lastAction = finalMsg + " → Juega de nuevo.";
+        setTimeout(makeOpponentMoveR, 1200);
         return;
       }
-      
-      gameState.lastAction = finalMsg + ". ✨ Tu turno.";
-      return; 
+
+      gameStateR.lastAction = finalMsg + ". ✨ Tu turno.";
+      return;
     }
   }
 
-  // 🔥 INTENTO DE ROBO DE IA (SIN REGENERACIÓN)
-  const drawResult = drawCardLogic(gameState, "opponent");
-  
+  const drawResult = drawCardLogic(gameStateR, "opponent");
+
   if (drawResult.error === "MAZO_VACIO_FINAL") {
-    // Fin del juego por mazo vacío durante turno de IA
-    const playerCount = gameState.playerHand.length;
-    const opponentCount = gameState.opponentHand.length;
-    
+    const playerCount = gameStateR.playerHand.length;
+    const opponentCount = gameStateR.opponentHand.length;
+
     if (opponentCount < playerCount) {
-        gameState.status = 'gameOver';
-        gameState.winner = 'opponent';
-        gameState.reason = 'empty_deck';
-        gameState.lastAction = "Perdiste :( vuelve a intentarlo";
-        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
+      gameStateR.status = "gameOver";
+      gameStateR.winner = "opponent";
+      gameStateR.reason = "empty_deck";
+      gameStateR.lastAction = "Perdiste :( vuelve a intentarlo";
+      gameStateR.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
     } else {
-        gameState.status = 'gameOver';
-        gameState.winner = 'player';
-        gameState.reason = 'empty_deck';
-        gameState.lastAction = "Ganaste";
-        gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
+      gameStateR.status = "gameOver";
+      gameStateR.winner = "player";
+      gameStateR.reason = "empty_deck";
+      gameStateR.lastAction = "Ganaste";
+      gameStateR.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
     }
     return;
   }
 
   if (!drawResult.error) {
-    gameState = drawResult;
-    gameState.lastAction = "🤖 Oponente robó una carta...";
-    setTimeout(makeOpponentMove, 800); 
+    gameStateR = drawResult;
+    gameStateR.lastAction = "🤖 Oponente robó una carta...";
+    setTimeout(makeOpponentMoveR, 800);
     return;
   } else {
-    // Fallback por seguridad
-    gameState.status = 'gameOver';
-    gameState.winner = 'player';
-    gameState.reason = 'empty_deck';
-    gameState.lastAction = "Ganaste";
-    gameState.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
-    return;
+    gameStateR.status = "gameOver";
+    gameStateR.winner = "player";
+    gameStateR.reason = "empty_deck";
+    gameStateR.lastAction = "Ganaste";
+    gameStateR.endMessageSub = "Partida finalizada, el mazo se ha quedado sin cartas";
   }
 }
 
-// ===============================
-// INICIO DEL SERVIDOR
-// ===============================
-// 🔌 OJO: Ahora usamos server.listen en lugar de app.listen para soportar WebSockets
+/* ==========================================================
+   🔢 ROUTER — MATEMÁTICAS  (/math/*)
+========================================================== */
+const mathRouter = express.Router();
+
+mathRouter.post("/start", (req, res) => {
+  const deck = mathEngine.createDeck();
+  gameStateM = {
+    playerHand: deck.splice(0, 7),
+    opponentHand: deck.splice(0, 7),
+    topCard: deck.pop(),
+    deck,
+    currentPlayer: "player",
+    status: "playing",
+    lives: 3,
+    questionsLeft: 3,
+    freePlay: false,
+    lastAction: "¡Inicio! Tu turno."
+  };
+  res.json(gameStateM);
+});
+
+mathRouter.post("/play", (req, res) => {
+  const { card } = req.body;
+  const result = mathEngine.playCard(gameStateM, card, "player");
+
+  if (result.error) return res.status(400).json({ error: result.error });
+  gameStateM = result;
+
+  if (gameStateM.status !== "gameOver" && gameStateM.currentPlayer === "opponent") {
+    setTimeout(makeOpponentMoveM, 800);
+  }
+  res.json(gameStateM);
+});
+
+mathRouter.post("/draw", (req, res) => {
+  const result = mathEngine.drawCardLogic(gameStateM, "player");
+
+  if (result.error === "MAZO_VACIO_FINAL") {
+    const player = gameStateM.playerHand.length;
+    const opponent = gameStateM.opponentHand.length;
+    gameStateM.status = "gameOver";
+    gameStateM.winner = player <= opponent ? "player" : "opponent";
+    gameStateM.reason = "empty_deck";
+    return res.json(gameStateM);
+  }
+
+  gameStateM = result;
+  res.json(gameStateM);
+});
+
+mathRouter.get("/question", (req, res) => {
+  if (gameStateM.questionsLeft <= 0) {
+    gameStateM.status = "gameOver";
+    gameStateM.winner = "opponent";
+    gameStateM.reason = "no_questions";
+    return res.json(gameStateM);
+  }
+  const q = questionsM[Math.floor(Math.random() * questionsM.length)];
+  res.json(q);
+});
+
+mathRouter.post("/answer-question", (req, res) => {
+  const { questionId, selectedOption } = req.body;
+  const q = questionsM.find(x => x.id === questionId);
+  if (!q) return res.status(400).json({ error: "Pregunta inválida" });
+
+  const correct = selectedOption === q.correct;
+  if (correct) {
+    gameStateM.freePlay = true;
+    gameStateM.questionsLeft--;
+    gameStateM.lastAction = "✅ Correcto - Modo libre";
+  } else {
+    gameStateM.lives--;
+    gameStateM.lastAction = `❌ Incorrecto (${gameStateM.lives} vidas)`;
+    if (gameStateM.lives <= 0) {
+      gameStateM.status = "gameOver";
+      gameStateM.winner = "opponent";
+    }
+  }
+
+  res.json({
+    ...gameStateM,
+    questionResult: correct ? "success" : "fail",
+    explanation: q.explanation
+  });
+});
+
+mathRouter.get("/status", (req, res) => res.json(gameStateM));
+
+function makeOpponentMoveM() {
+  if (gameStateM.status === "gameOver") return;
+  if (gameStateM.currentPlayer !== "opponent") return;
+
+  const hand = gameStateM.opponentHand;
+  const top = gameStateM.topCard;
+
+  const playable = hand.find(c =>
+    mathEngine.canPlayCard(c, top, null, gameStateM.freePlay)
+  );
+
+  if (playable) {
+    const result = mathEngine.playCard(gameStateM, playable, "opponent");
+    if (!result.error) {
+      gameStateM = result;
+      gameStateM.lastAction = `🤖 Oponente jugó ${playable.value}`;
+    }
+  } else {
+    const draw = mathEngine.drawCardLogic(gameStateM, "opponent");
+    if (draw.error === "MAZO_VACIO_FINAL") return;
+    gameStateM = draw;
+    gameStateM.lastAction = "🤖 Oponente robó carta";
+  }
+}
+
+/* ==========================================================
+   MONTAR ROUTERS
+========================================================== */
+app.use("/recycling", recyclingRouter);
+app.use("/math", mathRouter);
+
+/* ==========================================================
+   ENDPOINTS DE BASE DE DATOS (SQlite)
+========================================================== */
+const insertResult = db.prepare(`
+  INSERT INTO quiz_results (theme, score, total, passed, created_at)
+  VALUES (@theme, @score, @total, @passed, @created_at)
+`);
+
+const insertAnswer = db.prepare(`
+  INSERT INTO quiz_answers (quiz_result_id, question_text, selected_index, correct_index, is_correct)
+  VALUES (@quiz_result_id, @question_text, @selected_index, @correct_index, @is_correct)
+`);
+
+const saveQuizResult = db.transaction((theme, score, total, answers) => {
+  const passed = score >= 4 ? 1 : 0;
+  const created_at = new Date().toISOString();
+
+  const { lastInsertRowid } = insertResult.run({ theme, score, total, passed, created_at });
+
+  for (const ans of answers) {
+    insertAnswer.run({
+      quiz_result_id: lastInsertRowid,
+      question_text:  ans.question_text,
+      selected_index: ans.selected_index,
+      correct_index:  ans.correct_index,
+      is_correct:     ans.selected_index === ans.correct_index ? 1 : 0
+    });
+  }
+
+  return lastInsertRowid;
+});
+
+app.post("/quiz-result", (req, res) => {
+  const { theme, score, total, answers } = req.body;
+  if (!theme || score == null || !total || !Array.isArray(answers)) return res.status(400).json({ error: "Datos incompletos" });
+  if (!["math", "recycling"].includes(theme)) return res.status(400).json({ error: "Tema inválido" });
+  
+  const id = saveQuizResult(theme, score, total, answers);
+  res.status(201).json({ id, message: "Resultado guardado" });
+});
+
+app.get("/results", (req, res) => {
+  const { theme } = req.query;
+  const results = theme
+    ? db.prepare("SELECT * FROM quiz_results WHERE theme = ? ORDER BY created_at DESC").all(theme)
+    : db.prepare("SELECT * FROM quiz_results ORDER BY created_at DESC").all();
+
+  const resultIds = results.map(r => r.id);
+  let answers = [];
+  if (resultIds.length > 0) {
+    const placeholders = resultIds.map(() => "?").join(",");
+    answers = db.prepare(
+      `SELECT * FROM quiz_answers WHERE quiz_result_id IN (${placeholders})`
+    ).all(...resultIds);
+  }
+
+  const answersMap = {};
+  for (const ans of answers) {
+    if (!answersMap[ans.quiz_result_id]) answersMap[ans.quiz_result_id] = [];
+    answersMap[ans.quiz_result_id].push(ans);
+  }
+
+  const data = results.map(r => ({
+    ...r,
+    passed: r.passed === 1,
+    answers: answersMap[r.id] || []
+  }));
+
+  res.json(data);
+});
+
+app.get("/stats", (req, res) => {
+  const { theme } = req.query;
+  const where = theme ? "WHERE theme = ?" : "";
+  const params = theme ? [theme] : [];
+
+  const summary = db.prepare(`
+    SELECT
+      COUNT(*)                          AS total_quizzes,
+      ROUND(AVG(score), 2)              AS avg_score,
+      ROUND(AVG(passed) * 100, 1)       AS pass_rate,
+      MAX(score)                        AS best_score,
+      MIN(score)                        AS worst_score
+    FROM quiz_results ${where}
+  `).get(...params);
+
+  const byTheme = db.prepare(`
+    SELECT
+      theme,
+      COUNT(*)                    AS quizzes,
+      ROUND(AVG(score), 2)        AS avg_score,
+      ROUND(AVG(passed) * 100, 1) AS pass_rate
+    FROM quiz_results
+    GROUP BY theme
+  `).all();
+
+  res.json({ summary, by_theme: byTheme });
+});
+
+/* ==========================================================
+   INICIO DEL SERVIDOR UNIFICADO (HTTP + WebSockets)
+========================================================== */
 server.listen(PORT, HOST, () => {
-  console.log(`🚀 Servidor HTTP y WebSockets en http://${HOST}:${PORT}`);
+  console.log(`🚀 Servidor HTTP y WebSockets unificado en http://${HOST}:${PORT}`);
 });
 
 server.on("error", (error) => {
   console.error("Error del servidor:", error);
-});
-
-server.on("close", () => {
-  console.log("Servidor cerrado");
 });
 
 process.on("SIGINT", () => {
@@ -391,12 +578,4 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   console.log("SIGTERM recibido, cerrando servidor...");
   server.close(() => process.exit(0));
-});
-
-process.on("uncaughtException", (error) => {
-  console.error("Excepcion no controlada:", error);
-});
-
-process.on("unhandledRejection", (reason) => {
-  console.error("Promesa rechazada sin catch:", reason);
 });

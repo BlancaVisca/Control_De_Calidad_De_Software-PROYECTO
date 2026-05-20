@@ -1,0 +1,303 @@
+/* ================================
+   OVERLAY
+================================ */
+.rules-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 10, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 999;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ================================
+   MODAL
+================================ */
+.rules-modal {
+  background: linear-gradient(160deg, #0a0e2a 0%, #0d1640 60%, #071230 100%);
+  border: 1.5px solid rgba(100, 200, 255, 0.4);
+  border-radius: 20px;
+  box-shadow:
+    0 0 40px rgba(0, 180, 255, 0.15),
+    0 0 80px rgba(0, 100, 200, 0.08);
+  width: 100%;
+  max-width: 780px;
+  padding: 36px 44px 32px;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+/* ================================
+   HEADER
+================================ */
+.rules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.rules-page-label {
+  font-size: 12px;
+  color: rgba(100, 200, 255, 0.7);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rules-close {
+  background: transparent;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  color: rgba(100, 200, 255, 0.8);
+  border-radius: 8px;
+  font-size: 13px;
+  padding: 4px 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rules-close:hover {
+  background: rgba(100, 200, 255, 0.1);
+}
+
+/* ================================
+   TÍTULO
+================================ */
+.rules-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 24px;
+  letter-spacing: 0.01em;
+}
+
+/* ================================
+   SUBTÍTULOS DE SECCIÓN
+================================ */
+.rules-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(100, 200, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+/* ================================
+   CAJA GENÉRICA
+================================ */
+.rules-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+}
+
+.rules-box p {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.rules-box strong {
+  color: rgba(100, 200, 255, 0.95);
+}
+
+/* ================================
+   LISTA DENTRO DE CAJA
+================================ */
+.rules-list {
+  margin-top: 10px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rules-list li {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.65;
+}
+
+/* ================================
+   FILA DE DOS CARTAS (ejemplo)
+================================ */
+.rules-box-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.rules-card-img {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(100, 200, 255, 0.25);
+  border-radius: 12px;
+  min-height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.rules-card-img img {
+  max-height: 90px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.rules-card-img span {
+  font-size: 11px;
+  color: rgba(100, 200, 255, 0.5);
+  text-align: center;
+}
+
+/* ================================
+   DIVISOR
+================================ */
+.rules-divider {
+  border: none;
+  border-top: 1px solid rgba(100, 200, 255, 0.12);
+  margin: 18px 0;
+}
+
+/* ================================
+   GRID DE COMODINES
+================================ */
+.rules-wildcard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.rules-wildcard-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(100, 200, 255, 0.18);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rules-wildcard-img {
+  background: rgba(100, 200, 255, 0.06);
+  border-bottom: 1px dashed rgba(100, 200, 255, 0.2);
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.rules-wildcard-img img {
+  max-height: 90px;
+  max-width: 90%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.rules-wildcard-desc {
+  padding: 10px 14px;
+}
+
+.rules-wildcard-desc strong {
+  display: block;
+  font-size: 13px;
+  color: rgba(100, 200, 255, 0.9);
+  margin-bottom: 4px;
+}
+
+.rules-wildcard-desc span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* ================================
+   NAVEGACIÓN
+================================ */
+.rules-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.rules-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.rules-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(100, 200, 255, 0.25);
+  transition: background 0.2s;
+}
+
+.rules-dot.active {
+  background: rgba(100, 200, 255, 0.9);
+}
+
+/* ================================
+   BOTONES DE NAVEGACIÓN
+================================ */
+.rules-btn {
+  background: transparent;
+  border: 1px solid rgba(100, 200, 255, 0.4);
+  color: rgba(100, 200, 255, 0.9);
+  border-radius: 10px;
+  font-size: 13px;
+  padding: 8px 22px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rules-btn:hover {
+  background: rgba(100, 200, 255, 0.1);
+}
+
+.rules-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+.rules-btn.primary {
+  background: rgba(100, 200, 255, 0.15);
+  border-color: rgba(100, 200, 255, 0.6);
+}
+
+.rules-btn.primary:hover {
+  background: rgba(100, 200, 255, 0.25);
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+@media (max-width: 600px) {
+  .rules-modal {
+    padding: 24px 20px 20px;
+    max-width: 100%;
+  }
+
+  .rules-wildcard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-box-row {
+    grid-template-columns: 1fr;
+  }
+
+  .rules-title {
+    font-size: 20px;
+  }
+}

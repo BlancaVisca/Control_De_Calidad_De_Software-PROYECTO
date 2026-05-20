@@ -173,7 +173,27 @@
 .quiz-dot.answered {
   background: #00c853;
 }
+/* ESTRELLAS */
+.quiz-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 
+.quiz-star {
+  font-size: 2.2rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.quiz-star--filled {
+  color: #facc15; /* amarillo */
+}
+
+.quiz-star--empty {
+  color: #d1d5db; /* gris claro */
+}
 /* ================= */
 /* THEME MATEMATICAS */
 /* ================= */
@@ -200,4 +220,24 @@
 /* DOT RESPONDIDO ROJO */
 .quiz-container.math .quiz-dot.answered {
   background: #ff4d4d;
+}
+
+.back-menu-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.9);
+  color: white;
+  transition: 0.25s;
+  z-index: 20;
+   box-shadow: 0 0 30px rgba(255, 255, 255, 0.762);
+}
+
+.back-menu-btn:hover {
+  background: rgba(59, 130, 246, 0.4);
 }

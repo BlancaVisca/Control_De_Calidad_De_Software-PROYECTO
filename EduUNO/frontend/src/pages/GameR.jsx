@@ -1,10 +1,32 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/Card";
 import OpponentHand from "../components/OpponentHand";
 import PlayerHand from "../components/PlayerHand";
 import GameHUD from "../components/GameHUD";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
+import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 import "../css/game.css";
+import RulesModalRec from "./RulesModalRec";
+
+// 🔊 SONIDOS
+const soundButton = new Audio("/sounds/boton.mp3");
+const soundCard = new Audio("/sounds/flash.mp3");
+const soundCorrect = new Audio("/sounds/correcto.mp3");
+const soundWrong = new Audio("/sounds/equivocacion.mp3");
+const soundWin = new Audio("/sounds/retro_buena.mp3");
+const soundLose = new Audio("/sounds/retro_mala.mp3");
+
+// Se combinó la lógica de ambas ramas: permite mute y usa el sonido del botón por defecto
+const playSound = (sound = soundButton) => {
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+
+  try {
+    sound.currentTime = 0;
+    sound.play();
+  } catch (e) {}
+};
 
 // 🔊 SONIDO
 const soundButton = new Audio("/sounds/boton.mp3");
@@ -14,6 +36,7 @@ const playSound = () => {
 };
 
 export default function GameR() {
+    const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
@@ -26,8 +49,15 @@ export default function GameR() {
   const [focusZone, setFocusZone] = useState("hand");
   const [focusIndex, setFocusIndex] = useState(0);
 
+  const [showRules, setShowRules] = useState(true);
+
+  // 🕹️ ESTADOS PARA EL MANDO (Cursor Virtual)
+  // Zonas: "hand" (cartas), "actions" (botones), "question" (modal quiz), "choice" (modal comodín), "gameOver"
+  const [focusZone, setFocusZone] = useState("hand");
+  const [focusIndex, setFocusIndex] = useState(0);
+
   useEffect(() => {
-    fetch("http://localhost:3005/start", { method: "POST" })
+    fetch("http://localhost:3005/recycling/start", { method: "POST" })
       .then(res => res.json())
       .then(data => { 
         setGame(data); 
@@ -39,12 +69,97 @@ export default function GameR() {
   useEffect(() => {
     if (!game || game.status === 'gameOver' || game.currentPlayer === 'player') return;
     const interval = setInterval(() => {
-      fetch("http://localhost:3005/status")
+      fetch("http://localhost:3005/recycling/status")
         .then(res => res.json())
         .then(data => setGame(prev => ({ ...prev, ...data })));
     }, 1000);
     return () => clearInterval(interval);
   }, [game?.currentPlayer, game?.status]);
+
+  // 🔊 Efecto de sonido de victoria/derrota (De la rama main)
+  useEffect(() => {
+    if (game?.status === "gameOver") {
+      if (game.winner === "player") {
+        playSound(soundWin);
+      } else {
+        playSound(soundLose);
+      }
+    }
+  }, [game?.status]);
+
+  // 🕹️ Auto-gestión de las Zonas de Foco (De la rama Obed-Mando)
+  useEffect(() => {
+    if (selectedQuestion) { setFocusZone("question"); setFocusIndex(0); }
+    else if (pendingChoice) { setFocusZone("choice"); setFocusIndex(0); }
+    else if (game?.status === 'gameOver') { setFocusZone("gameOver"); setFocusIndex(0); }
+    else { setFocusZone("hand"); setFocusIndex(0); }
+  }, [selectedQuestion, pendingChoice, game?.status]);
+
+  // 🕹️ Prevenir que el índice se salga de rango si juegas una carta y tu mano se reduce
+  useEffect(() => {
+    if (focusZone === "hand" && game?.playerHand) {
+      if (focusIndex >= game.playerHand.length) {
+        setFocusIndex(Math.max(0, game.playerHand.length - 1));
+      }
+    }
+  }, [game?.playerHand, focusZone]);
+
+  /* ===== LÓGICA DEL MANDO 🕹️ ===== */
+  useMando({
+    onUp: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "question") setFocusIndex(prev => Math.max(0, prev - 1));
+      else if (focusZone === "hand") { setFocusZone("actions"); setFocusIndex(0); }
+    },
+    onDown: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "question") setFocusIndex(prev => Math.min(selectedQuestion.options.length - 1, prev + 1));
+      else if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
+    },
+    onLeft: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "hand") setFocusIndex(prev => Math.max(0, prev - 1));
+      else if (focusZone === "actions") setFocusIndex(0);
+      else if (focusZone === "choice") setFocusIndex(prev => Math.max(0, prev - 1));
+    },
+    onRight: () => {
+      if (game?.status === 'gameOver') return;
+      if (focusZone === "hand") setFocusIndex(prev => Math.min(game.playerHand.length - 1, prev + 1));
+      else if (focusZone === "actions") setFocusIndex(1);
+      else if (focusZone === "choice") setFocusIndex(prev => Math.min(pendingChoice.options.length - 1, prev + 1));
+    },
+    onButton2: () => { // 🟢 BOTÓN CONFIRMAR
+      playSound();
+      if (game?.status === 'gameOver') {
+        window.location.reload();
+      } else if (focusZone === "question" && userAnswer === null) {
+        handleSubmitAnswer(focusIndex);
+      } else if (focusZone === "choice") {
+        handleChoice(pendingChoice.options[focusIndex]);
+      } else if (game?.currentPlayer === 'player') {
+        if (focusZone === "actions") {
+          if (focusIndex === 0) handleDrawCard();
+          else handleOpenQuestion();
+        } else if (focusZone === "hand") {
+          const cardToPlay = game.playerHand[focusIndex];
+          if (cardToPlay && canPlay(cardToPlay, game.topCard)) {
+            handlePlayCard(cardToPlay);
+          } else {
+            setModalMessage("⚠️ No puedes jugar esta carta ahora mismo.");
+            setTimeout(() => setModalMessage(null), 2000);
+          }
+        }
+      }
+    },
+    onButton1: () => { // 🔴 BOTÓN REGRESAR / CANCELAR
+      if (focusZone === "choice") setPendingChoice(null);
+      else if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
+      else if (focusZone === "question" && userAnswer === null) { setSelectedQuestion(null); setFocusZone("hand"); }
+    }
+  });
+
+  // 🕹️ Helper visual para elementos enfocados
+  const getFocusStyle = (isActive) => isActive ? { outline: "4px solid #4ade80", transform: "scale(1.08)", transition: "all 0.2s", zIndex: 10, boxShadow: "0 0 20px rgba(74, 222, 128, 0.6)" } : { transition: "all 0.2s" };
 
   // 🕹️ Auto-gestión de las Zonas de Foco
   useEffect(() => {
@@ -159,7 +274,7 @@ export default function GameR() {
         shadowColor = "rgba(34, 197, 94, 0.35)";
         bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
       } else {
-        title = "😔 Perdiste";
+        title = "Perdiste";
         color = "#f87171";
       }
     } else if (game.reason === 'no_questions') {
@@ -170,14 +285,14 @@ export default function GameR() {
       shadowColor = "rgba(245, 158, 11, 0.35)";
       bgGradient = "linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15))";
     } else if (game.winner === 'player') {
-      title = "🎉 ¡GANASTE!";
+      title = "¡GANASTE!";
       subTitle = "El oponente se quedó sin cartas o vidas.";
       color = "#4ade80";
       borderColor = "rgba(34, 197, 94, 0.5)";
       shadowColor = "rgba(34, 197, 94, 0.35)";
       bgGradient = "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15))";
     } else {
-      title = "💔 PERDISTE";
+      title = "PERDISTE";
       subTitle = game.lastAction || "Inténtalo de nuevo.";
       color = "#f87171";
     }
@@ -194,7 +309,7 @@ export default function GameR() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: `radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent), radial-gradient(2px 2px at 40% 70%, rgba(255,255,255,0.2), transparent)`, animation: 'twinkle 4s ease-in-out infinite' }} />
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '40px 30px', maxWidth: '650px', width: '90%', animation: 'gameOverPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
           <div style={{ fontSize: '5rem', marginBottom: '25px', animation: 'float 3s ease-in-out infinite', filter: `drop-shadow(0 0 30px ${shadowColor})`, display: 'inline-block' }}>
-            {game.winner === 'player' ? '🏆' : game.reason === 'no_questions' ? '❓' : '💔'}
+            {game.winner === 'player' ? '' : game.reason === 'no_questions' ? '' : ''}
           </div>
           <h1 style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '3.5rem', color: color, margin: '0 0 20px 0', textShadow: `0 0 40px ${shadowColor}`, letterSpacing: '3px', textTransform: 'uppercase', lineHeight: 1.1 }}>{title}</h1>
           <p style={{ fontSize: '1.3rem', color: '#cbd5e1', margin: '0 0 30px 0', lineHeight: 1.6, opacity: 0.95, maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>{subTitle}</p>
@@ -205,9 +320,59 @@ export default function GameR() {
             </div>
           )}
           {/* 🕹️ Aplicamos el foco al botón original de jugar de nuevo */}
+
+
+<button
+  onClick={() => { playSound(); window.location.reload(); }}
+  style={{
+    ...getFocusStyle(focusZone === "gameOver"),
+    marginTop: '8px',
+    padding: '15px 67px',
+    background: 'linear-gradient(135deg, #a855f7, #22d3ee)',
+    border: 'none',
+    borderRadius: '22px',
+    color: '#020617',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '1.44rem',
+    fontWeight: '700',
+    letterSpacing: '3px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 8px 32px rgba(168, 85, 247, 0.45)',
+  }}
+  onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 40px rgba(168, 85, 247, 0.65)'; }}
+  onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(168, 85, 247, 0.45)'; }}
+>
+  Jugar de nuevo
+</button>
+
+<button
+onClick={() => navigate('/menu')}  style={{
+    marginTop: '8px',
+    padding: '15px 60px',
+    background: 'transparent',
+    border: '2px solid #22d3ee',
+    borderRadius: '22px',
+    fontFamily: "'Orbitron', sans-serif",
+    fontSize: '1.2rem',
+    fontWeight: '700',
+    color: '#22d3ee',
+    letterSpacing: '3px',
+    cursor: 'pointer',
+    opacity: '0.7',
+    transition: 'opacity 0.2s ease',
+  }}
+  onMouseOver={(e) => { e.currentTarget.style.opacity = '1'; }}
+  onMouseOut={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+>
+  Regresar al menú
+</button>
+
+
+          {/* 🕹️ Aplicamos el foco al botón original de jugar de nuevo */}
           <button onClick={() => { playSound(); window.location.reload(); }} style={{ ...getFocusStyle(focusZone === "gameOver"), padding: '18px 55px', fontSize: '1.25rem', background: game.winner === 'player' ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%)', border: `2px solid ${borderColor}`, borderRadius: '16px', color: 'white', fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: `0 15px 50px ${shadowColor}`, textTransform: 'uppercase', letterSpacing: '2px' }} onMouseOver={(e) => { e.target.style.transform = 'translateY(-5px) scale(1.02)'; e.target.style.boxShadow = `0 25px 60px ${shadowColor}`; }} onMouseOut={(e) => { e.target.style.transform = 'translateY(0) scale(1)'; e.target.style.boxShadow = `0 15px 50px ${shadowColor}`; }}>🔄 Jugar de nuevo</button>
           <div style={{ marginTop: '35px', paddingTop: '25px', borderTop: `1px solid ${borderColor}`, opacity: 0.5, fontSize: '0.9rem', color: '#64748b', letterSpacing: '1px' }}>
-            <span style={{ marginRight: '12px' }}>♻️ ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
+            <span style={{ marginRight: '12px' }}>ReUNOvables</span><span>•</span><span style={{ marginLeft: '12px' }}>Educa y Juega</span>
           </div>
         </div>
         <style>{`@keyframes gameOverPopIn { 0% { opacity: 0; transform: scale(0.7) translateY(40px); } 100% { opacity: 1; transform: scale(1) translateY(0); } } @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(5deg); } } @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }`}</style>
@@ -217,8 +382,9 @@ export default function GameR() {
 
   const handlePlayCard = async (card) => {
     if (game.currentPlayer !== 'player') return;
+    playSound(soundCard);
     try {
-      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
+      const res = await fetch("http://localhost:3005/recycling/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ card }) });
       const data = await res.json();
       if (data.status === 'gameOver') { setGame(data); return; }
       if (data.error) { setModalMessage(`⚠️ ${data.error}`); } 
@@ -236,7 +402,7 @@ export default function GameR() {
     if (!pendingChoice) return;
     try {
       const body = { card: pendingChoice.card, chosenColor: pendingChoice.type === 'color' ? selection : null, chosenRecycle: pendingChoice.type === 'recycle' ? selection : null };
-      const res = await fetch("http://localhost:3005/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch("http://localhost:3005/recycling/play", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json();
       if (data.status === 'gameOver') { setGame(data); setPendingChoice(null); return; }
       if (data.error) { setModalMessage(`Error: ${data.error}`); } 
@@ -251,7 +417,10 @@ export default function GameR() {
 
   const handleDrawCard = async () => {
     if (game.currentPlayer !== 'player') return;
-    const res = await fetch("http://localhost:3005/draw", { method: "POST" });
+
+    playSound(soundCard);
+
+    const res = await fetch("http://localhost:3005/recycling/draw", { method: "POST" });
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) setModalMessage(data.error);
@@ -263,15 +432,18 @@ export default function GameR() {
 
   const handleOpenQuestion = async () => {
     if (game.currentPlayer !== 'player') return;
+
+    playSound(soundButton);
+
     if (game.freePlay) {
-       const res = await fetch("http://localhost:3005/check-question-usage", { method: "POST" });
+       const res = await fetch("http://localhost:3005/recycling/check-question-usage", { method: "POST" });
        const data = await res.json();
        if (data.status === 'gameOver') { setGame(data); return; }
        setGame(data);
        setModalMessage(`⚠️ ${data.lastAction} Vidas: ${data.lives}`);
        return;
     }
-    const res = await fetch("http://localhost:3005/question");
+    const res = await fetch("http://localhost:3005/recycling/question");
     const data = await res.json();
     if (data.status === 'gameOver') { setGame(data); return; }
     if (data.error) {
@@ -288,7 +460,7 @@ export default function GameR() {
     setUserAnswer(optionIndex);
     
     try {
-      const res = await fetch("http://localhost:3005/answer-question", {
+      const res = await fetch("http://localhost:3005/recycling/answer-question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questionId: selectedQuestion.id, selectedOption: optionIndex })
@@ -304,8 +476,11 @@ export default function GameR() {
 
       let msg = "";
       if (data.questionResult === 'success') {
+        playSound(soundCorrect);
         msg = "✅ ¡Correcto!  MODO LIBRE ACTIVADO.";
       } else {
+        // Se mantiene la lógica combinada: suena el error y muestra las vidas restantes
+        playSound(soundWrong); 
         const vidasRestantes = data.lives; 
         msg = `❌ Incorrecto. Pierdes 1 vida. Te quedan: ${vidasRestantes} ❤️`;
       }
@@ -315,6 +490,7 @@ export default function GameR() {
       setTimeout(() => { 
         setSelectedQuestion(null); 
         setModalMessage(null); 
+        setFocusZone("hand"); // Regresamos el foco a la mano
         setFocusZone("hand"); // Regresamos el foco a la mano
       }, 3000);
 
@@ -347,7 +523,9 @@ export default function GameR() {
         currentPlayer={game.currentPlayer} 
         lastAction={game.lastAction} 
       />
+      {/* Botón Regresar */}
       
+      {/* Panel de Información de Carta Actual (Diseño Original Intacto) */}
       {/* Panel de Información de Carta Actual (Diseño Original Intacto) */}
       {game.topCard && (
         <div style={{
@@ -382,6 +560,21 @@ export default function GameR() {
       <div className="center-area">
         <div className="center-card">{game.topCard && <Card card={game.topCard} />}</div>
         <div className="controls">
+          {/* 🕹️ Controles con getFocusStyle mantenido de la rama Obed-Mando */}
+          <button 
+            className="draw-btn" 
+            onClick={() => { playSound(); handleDrawCard(); }} 
+            disabled={game.currentPlayer !== 'player'}
+            style={getFocusStyle(focusZone === "actions" && focusIndex === 0)}
+          >
+            Robar
+          </button>
+          <button 
+            className="question-btn" 
+            onClick={() => { playSound(); handleOpenQuestion(); }} 
+            disabled={game.currentPlayer !== 'player' || game.questionsLeft <= 0} 
+            style={{ opacity: game.freePlay ? 0.6 : 1, ...getFocusStyle(focusZone === "actions" && focusIndex === 1) }}
+          >
           {/* 🕹️ Agregamos getFocusStyle a los botones centrales */}
           <button 
             className="draw-btn" 
@@ -411,12 +604,30 @@ export default function GameR() {
         currentPlayer={game.currentPlayer}
         focusedIndex={focusZone === "hand" ? focusIndex : -1} 
       />
+      
+      {/* 🕹️ Pasamos el focusedIndex al PlayerHand */}
+      <PlayerHand 
+        hand={game.playerHand} 
+        topCard={game.topCard} 
+        onPlay={(card) => { playSound(); handlePlayCard(card); }} 
+        canPlay={canPlay} 
+        currentPlayer={game.currentPlayer}
+        focusedIndex={focusZone === "hand" ? focusIndex : -1} 
+      />
 
       {pendingChoice && (
         <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
           <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #3b82f6', textAlign:'center', maxWidth:'400px', width:'90%'}}>
             <h3 style={{color:'#60a5fa', marginBottom:'1rem'}}>{pendingChoice.message}</h3>
             <div style={{display:'flex', gap:'10px', flexWrap:'wrap', justifyContent:'center'}}>
+              {pendingChoice.options.map((opt, idx) => (
+                <button 
+                  key={opt} 
+                  onClick={() => { playSound(); handleChoice(opt); }} 
+                  style={{...getFocusStyle(focusZone === "choice" && focusIndex === idx), padding:'10px 20px', background:'#3b82f6', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold', textTransform:'capitalize'}}
+                >
+                  {opt}
+                </button>
               {pendingChoice.options.map((opt, idx) => (
                 <button 
                   key={opt} 
@@ -435,9 +646,17 @@ export default function GameR() {
       {selectedQuestion && (
         <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
           <div style={{background:'#1e293b', padding:'2rem', borderRadius:'16px', border:'1px solid #f59e0b', maxWidth:'500px', width:'90%', textAlign:'center'}}>
-            <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}>❓ {selectedQuestion.question}</h3>
+            <h3 style={{color:'#f59e0b', marginBottom:'1rem'}}> {selectedQuestion.question}</h3>
             <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
               {selectedQuestion.options.map((opt, idx) => (
+                <button 
+                  key={idx} 
+                  onClick={() => { playSound(); handleSubmitAnswer(idx); }} 
+                  disabled={userAnswer !== null} 
+                  style={{...getFocusStyle(focusZone === "question" && focusIndex === idx && userAnswer === null), padding:'12px', background: userAnswer === idx ? (idx === selectedQuestion.correct ? '#22c55e' : '#ef4444') : '#334155', color:'white', border:'none', borderRadius:'8px', cursor:'pointer', fontWeight:'bold'}}
+                >
+                  {opt}
+                </button>
                 <button 
                   key={idx} 
                   onClick={() => { playSound(); handleSubmitAnswer(idx); }} 
@@ -458,6 +677,11 @@ export default function GameR() {
           {modalMessage} <span onClick={()=>setModalMessage(null)} style={{marginLeft:'10px', cursor:'pointer'}}>✕</span>
         </div>
       )}
+
+      {showRules && (
+        <RulesModalRec onClose={() => setShowRules(false)} />
+      )}
+
     </div>
   );
 }

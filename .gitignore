@@ -1,0 +1,6 @@
+CLAUDE.md
+py/*
+node_modules/
+*.db
+*.db-shm
+*.db-wal
