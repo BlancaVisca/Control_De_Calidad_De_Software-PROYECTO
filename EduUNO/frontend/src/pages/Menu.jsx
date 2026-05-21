@@ -2,7 +2,6 @@ import "../css/styles.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
-import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
 // 🔊 SONIDO
 const soundButton = new Audio("/sounds/boton.mp3");
@@ -21,25 +20,15 @@ export default function Menu() {
   const [selectedTheme, setSelectedTheme] = useState("");
   const [error, setError] = useState("");
   
-  // Del main: Estado para saber si está muteado
+  // Estado para saber si está muteado
   const [muted, setMuted] = useState(
     localStorage.getItem("mute") === "true"
   );
 
   // 🕹️ Estado para saber en qué opción estamos parados (0: Select, 1: Jugar, 2: Flashcards, 3: Botón de Sonido)
   const [focusedIndex, setFocusedIndex] = useState(0); 
-
-  
-  // 🕹️ Estado para saber en qué opción estamos parados (0: Select, 1: Jugar, 2: Flashcards)
-  const [focusedIndex, setFocusedIndex] = useState(0); 
   
   const navigate = useNavigate();
-
-  // Opciones de temas para iterar fácilmente con el joystick
-  const temas = [
-    { id: "recycling", nombre: "Separación de residuos" },
-    { id: "math", nombre: "Matemáticas" }
-  ];
 
   // Opciones de temas para iterar fácilmente con el joystick
   const temas = [
@@ -56,10 +45,8 @@ export default function Menu() {
     return true;
   };
 
-  // 🔥 CORRECCIÓN AQUÍ
   const startGame = () => {
     if (!validate()) return;
-
     if (selectedTheme === "math") {
       navigate("/gameM");
     } else {
@@ -74,7 +61,6 @@ export default function Menu() {
     });
   };
 
-  // Función auxiliar para el mute
   const toggleMute = () => {
     const newValue = !muted;
     setMuted(newValue);
@@ -83,24 +69,20 @@ export default function Menu() {
 
   // 🕹️ Lógica del Mando
   useMando({
-    // Navegar hacia abajo
     onDown: () => {
-      setFocusedIndex((prev) => Math.min(prev + 1, 3)); // Aumentamos el límite a 3 para alcanzar el botón de sonido
+      setFocusedIndex((prev) => Math.min(prev + 1, 3)); 
     },
-    // Navegar hacia arriba
     onUp: () => {
-      setFocusedIndex((prev) => Math.max(prev - 1, 0)); // No baja del índice 0
+      setFocusedIndex((prev) => Math.max(prev - 1, 0)); 
     },
-    // Cambiar tema hacia la derecha (solo si estamos parados en el Select)
     onRight: () => {
       if (focusedIndex === 0) {
         const indexActual = temas.findIndex(t => t.id === selectedTheme);
         const nuevoIndex = indexActual === -1 ? 0 : (indexActual + 1) % temas.length;
         setSelectedTheme(temas[nuevoIndex].id);
-        setError(""); // Limpiamos el error si ya eligió algo
+        setError(""); 
       }
     },
-    // Cambiar tema hacia la izquierda
     onLeft: () => {
       if (focusedIndex === 0) {
         const indexActual = temas.findIndex(t => t.id === selectedTheme);
@@ -109,7 +91,6 @@ export default function Menu() {
         setError("");
       }
     },
-    // Confirmar acción (Enter)
     onButton2: () => {
       if (focusedIndex === 1) {
         playSound(soundButton); 
@@ -118,59 +99,12 @@ export default function Menu() {
         playSound(soundButton); 
         goFlashcards();
       } else if (focusedIndex === 3) {
-        toggleMute(); // Usamos el joystick para cambiar el sonido
+        toggleMute(); 
       }
     }
   });
 
-  // Estilo visual para que el usuario sepa dónde está el foco
-  const getFocusStyle = (index) => {
-    return focusedIndex === index 
-      ? { outline: "4px solid #4ade80", transform: "scale(1.02)", transition: "all 0.2s" } 
-      : { transition: "all 0.2s" };
-  };
-
-  // 🕹️ Lógica del Mando
-  useMando({
-    // Navegar hacia abajo
-    onDown: () => {
-      setFocusedIndex((prev) => Math.min(prev + 1, 2)); // No pasa del índice 2
-    },
-    // Navegar hacia arriba
-    onUp: () => {
-      setFocusedIndex((prev) => Math.max(prev - 1, 0)); // No baja del índice 0
-    },
-    // Cambiar tema hacia la derecha (solo si estamos parados en el Select)
-    onRight: () => {
-      if (focusedIndex === 0) {
-        const indexActual = temas.findIndex(t => t.id === selectedTheme);
-        const nuevoIndex = indexActual === -1 ? 0 : (indexActual + 1) % temas.length;
-        setSelectedTheme(temas[nuevoIndex].id);
-        setError(""); // Limpiamos el error si ya eligió algo
-      }
-    },
-    // Cambiar tema hacia la izquierda
-    onLeft: () => {
-      if (focusedIndex === 0) {
-        const indexActual = temas.findIndex(t => t.id === selectedTheme);
-        const nuevoIndex = indexActual === -1 ? 0 : (indexActual - 1 + temas.length) % temas.length;
-        setSelectedTheme(temas[nuevoIndex].id);
-        setError("");
-      }
-    },
-    // Confirmar acción (Enter)
-    onButton2: () => {
-      if (focusedIndex === 1) {
-        playSound(soundButton); // Reproduce sonido al presionar el botón del arcade
-        startGame();
-      } else if (focusedIndex === 2) {
-        playSound(soundButton); // Reproduce sonido al presionar el botón del arcade
-        goFlashcards();
-      }
-    }
-  });
-
-  // Estilo visual para que el usuario sepa dónde está el foco
+  // Estilo visual para el foco
   const getFocusStyle = (index) => {
     return focusedIndex === index 
       ? { outline: "4px solid #4ade80", transform: "scale(1.02)", transition: "all 0.2s" } 
@@ -186,16 +120,9 @@ export default function Menu() {
 
         <h2 className="theme-title">Selecciona un tema:</h2>
 
-        {/* 🕹️ Le aplicamos el estilo dinámico dependiendo del focusedIndex */}
-        {/* 🕹️ Le aplicamos el estilo dinámico dependiendo del focusedIndex */}
         <select
           className={`theme-dropdown ${error ? "input-error" : ""}`}
           value={selectedTheme}
-          onChange={(e) => {
-            setSelectedTheme(e.target.value);
-            setError("");
-          }}
-          style={getFocusStyle(0)} 
           onChange={(e) => {
             setSelectedTheme(e.target.value);
             setError("");
@@ -208,15 +135,10 @@ export default function Menu() {
           {temas.map(tema => (
             <option key={tema.id} value={tema.id}>{tema.nombre}</option>
           ))}
-          {temas.map(tema => (
-            <option key={tema.id} value={tema.id}>{tema.nombre}</option>
-          ))}
         </select>
 
         {error && <div className="error-message">{error}</div>}
 
-        <button 
-          className="btn-primary" 
         <button 
           className="btn-primary" 
           onClick={() => {
@@ -224,13 +146,10 @@ export default function Menu() {
             startGame();
           }}
           style={getFocusStyle(1)}
-          style={getFocusStyle(1)}
         >
           INICIAR JUEGO →
         </button>
 
-        <button 
-          className="btn-secondary" 
         <button 
           className="btn-secondary" 
           onClick={() => {
@@ -238,13 +157,10 @@ export default function Menu() {
             goFlashcards();
           }}
           style={getFocusStyle(2)}
-          style={getFocusStyle(2)}
         >
-           VER FLASHCARDS
            VER FLASHCARDS
         </button>
 
-        {/* 🕹️ Le agregamos el getFocusStyle(3) al botón de mute */}
         <button
           className="btn-secondary"
           onClick={toggleMute}

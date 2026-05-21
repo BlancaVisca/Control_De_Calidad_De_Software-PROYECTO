@@ -1,187 +1,9 @@
 import { useEffect, useState } from "react";
-import CardM from "../components/CardM";
-import OpponentHandM from "../components/OpponentHandM";
-import PlayerHandM from "../components/PlayerHandM";
-import GameHUD from "../components/GameHUD";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 import { useNavigate } from "react-router-dom";
 import RulesModalMath from "./RulesModalMath";
 import "../css/gameM.css";
 
-// 🔊 SONIDO
-const soundButton = new Audio("/sounds/boton.mp3");
-const playSound = () => {
-  soundButton.currentTime = 0;
-  soundButton.play();
-};
-
-export default function GameM() {
-  const [game, setGame] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedQuestion, setSelectedQuestion] = useState(null);
-  const [userAnswer, setUserAnswer] = useState(null);
-  const [modalMessage, setModalMessage] = useState(null);
-
-  // 🕹️ ESTADOS PARA EL MANDO (Cursor Virtual)
-  const [focusZone, setFocusZone] = useState("hand");
-  const [focusIndex, setFocusIndex] = useState(0);
-
-  /* =========================
-     START
-  ========================= */
-  useEffect(() => {
-    fetch("http://localhost:3006/start", { method: "POST" })
-      .then(res => res.json())
-      .then(data => {
-        setGame(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  /* =========================
-     POLLING OPONENTE
-  ========================= */
-  useEffect(() => {
-    if (!game || game.currentPlayer === "player") return;
-
-    const interval = setInterval(() => {
-      fetch("http://localhost:3006/status")
-        .then(res => res.json())
-        .then(data => setGame(prev => ({ ...prev, ...data })));
-    }, 800);
-
-    return () => clearInterval(interval);
-  }, [game?.currentPlayer]);
-
-  // 🕹️ Auto-gestión de las Zonas de Foco
-  useEffect(() => {
-    if (selectedQuestion) { setFocusZone("question"); setFocusIndex(0); }
-    else if (game?.status === 'gameOver') { setFocusZone("gameOver"); setFocusIndex(0); }
-    else { setFocusZone("hand"); setFocusIndex(0); }
-  }, [selectedQuestion, game?.status]);
-
-  // 🕹️ Prevenir que el índice se salga de rango si juegas una carta y tu mano se reduce
-  useEffect(() => {
-    if (focusZone === "hand" && game?.playerHand) {
-      if (focusIndex >= game.playerHand.length) {
-        setFocusIndex(Math.max(0, game.playerHand.length - 1));
-      }
-    }
-  }, [game?.playerHand, focusZone]);
-
-  /* =========================
-     LÓGICA DEL MANDO 🕹️
-  ========================= */
-  useMando({
-    onUp: () => {
-      if (game?.status === 'gameOver') return;
-      if (focusZone === "question") setFocusIndex(prev => Math.max(0, prev - 1));
-      else if (focusZone === "hand") { setFocusZone("actions"); setFocusIndex(0); }
-    },
-    onDown: () => {
-      if (game?.status === 'gameOver') return;
-      if (focusZone === "question") setFocusIndex(prev => Math.min(selectedQuestion.options.length - 1, prev + 1));
-      else if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
-    },
-    onLeft: () => {
-      if (game?.status === 'gameOver') return;
-      if (focusZone === "hand") setFocusIndex(prev => Math.max(0, prev - 1));
-      else if (focusZone === "actions") setFocusIndex(0);
-    },
-    onRight: () => {
-      if (game?.status === 'gameOver') return;
-      if (focusZone === "hand") setFocusIndex(prev => Math.min(game.playerHand.length - 1, prev + 1));
-      else if (focusZone === "actions") setFocusIndex(1);
-    },
-    onButton2: () => { // 🟢 BOTÓN CONFIRMAR
-      playSound();
-      if (game?.status === 'gameOver') {
-        window.location.reload();
-      } else if (focusZone === "question" && userAnswer === null) {
-        handleSubmitAnswer(focusIndex);
-      } else if (game?.currentPlayer === 'player') {
-        if (focusZone === "actions") {
-          if (focusIndex === 0) handleDrawCard();
-          else handleOpenQuestion();
-        } else if (focusZone === "hand") {
-          const cardToPlay = game.playerHand[focusIndex];
-          if (cardToPlay && canPlay()) {
-            handlePlayCard(cardToPlay);
-          }
-        }
-      }
-    },
-    onButton1: () => { // 🔴 BOTÓN REGRESAR / CANCELAR
-      if (focusZone === "actions") { setFocusZone("hand"); setFocusIndex(0); }
-      else if (focusZone === "question" && userAnswer === null) { setSelectedQuestion(null); setFocusZone("hand"); }
-    }
-  });
-
-  // 🕹️ Helper visual para elementos enfocados
-  const getFocusStyle = (isActive) => isActive ? { outline: "4px solid #4ade80", transform: "scale(1.08)", transition: "all 0.2s", zIndex: 10, boxShadow: "0 0 20px rgba(74, 222, 128, 0.6)" } : { transition: "all 0.2s" };
-
-  // 🔥 FUNCIÓN AUXILIAR PARA COLOR DEL TEXTO EN INFO BOX
-  const getColorStyle = (color) => {
-    if (!color) return '#ffffff';
-    if (color === 'rojo') return '#ef4444';
-    if (color === 'azul') return '#3b82f6';
-    if (color === 'amarillo') return '#eab308';
-    if (color === 'verde') return '#22c55e';
-    return '#ffffff';
-  };
-
-  if (loading || !game) return <h1>Cargando...</h1>;
-
-  /* =========================
-     🏆 GAME OVER (Original intacto)
-  ========================= */
-  if (game.status === "gameOver") {
-    const isWinner = game.winner === "player";
-
-    return (
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "radial-gradient(circle, #020617, #0f172a)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          color: "white",
-          zIndex: 9999,
-        }}
-      >
-        <h1 style={{ fontSize: "3rem" }}>
-          {isWinner ? "🏆 GANASTE" : "💔 PERDISTE"}
-        </h1>
-
-        {game.reason === "empty_deck" && (
-          <p>Se acabó el mazo</p>
-        )}
-
-        <p style={{ marginTop: "15px" }}>
-          🫵 Tú: {game.playerHand.length} cartas <br />
-          🤖 Oponente: {game.opponentHand.length} cartas
-        </p>
-
-        {/* 🕹️ Aplicamos foco visual al botón */}
-        <button
-          onClick={() => { playSound(); window.location.reload(); }}
-          style={{
-            marginTop: "20px",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            border: "none",
-            background: "#22d3ee",
-            cursor: "pointer",
-            fontWeight: "bold",
-            ...getFocusStyle(focusZone === "gameOver")
-          }}
-        >
-          🔄 Jugar otra vez
-        </button>
 // 🔊 SONIDOS
 const soundButton = new Audio("/sounds/boton.mp3");
 const soundCard   = new Audio("/sounds/flash.mp3");
@@ -379,35 +201,10 @@ function InteractiveGraph({ angle, graphMode, parabolaAngle }) {
   );
 }
 
-/* ── RESULTADO FINAL ── */
-function FinalResult({ score, onRestart }) {
-  const navigate = useNavigate();
-  const stars = getStars(score);
-  const msgs  = ["Sin aciertos, ¡sigue intentando!", "Sigue practicando", "Casi lo logras", "¡Buen trabajo!", "¡Muy bien!", "¡Perfecto!"];
-  useEffect(() => { playSound(score >= 3 ? soundWin : soundLose); }, []);
-  return (
-    <div className="final-result">
-      <div className="final-result__inner">
-        <h2 className="final-result__title">Resultado Final</h2>
-        <div className="final-result__stars">
-          {[1,2,3,4,5].map(s => (
-            <span key={s} className={`star ${s <= stars ? "star--active" : ""}`}>★</span>
-          ))}
-        </div>
-        <div className="final-result__score">{score * 20}<span>/100</span></div>
-        <div className="final-result__msg">{msgs[stars]}</div>
-        <div className="final-result__detail">{score} de 5 respuestas correctas</div>
-        <button className="final-result__btn" onClick={onRestart}>Jugar otra vez</button>
-        <button className="final-result__menu" onClick={() => navigate("/menu")}>Regresar al menu</button>
-      </div>
-    </div>
-  );
-}
-
 /* ── COMPONENTE PRINCIPAL ── */
 export default function GameM() {
 
-    const navigate = useNavigate(); 
+  const navigate = useNavigate(); 
 
   const [showRules,     setShowRules]     = useState(true);
   const [challenges,    setChallenges]    = useState([]);
@@ -419,6 +216,9 @@ export default function GameM() {
   const [feedback,      setFeedback]      = useState(null);
   const [gameOver,      setGameOver]      = useState(false);
   const [validated,     setValidated]     = useState(false);
+
+  // 🕹️ Foco de Mando para este juego
+  const [focoMando, setFocoMando] = useState(0);
 
   useEffect(() => { if (!showRules) startGame(); }, [showRules]);
 
@@ -432,6 +232,7 @@ export default function GameM() {
     setFeedback(null);
     setGameOver(false);
     setValidated(false);
+    setFocoMando(1); // Foco en cambiar modo al iniciar
   }
 
   const challenge   = challenges[roundIndex];
@@ -477,29 +278,6 @@ export default function GameM() {
       if (roundIndex + 1 >= totalRounds) {
         setGameOver(true);
       } else {
-        setModalMessage(`❌ Incorrecto. Vidas: ${data.lives}`);
-      }
-
-      setTimeout(() => {
-        setSelectedQuestion(null);
-        setUserAnswer(null);
-        setFocusZone("hand"); // Regresa a la mano
-      }, 2500);
-
-    } catch (err) {
-      console.error(err);
-      setModalMessage("Error al responder");
-    }
-  };
-
-  /* =========================
-     🧠 REGLAS (BACKEND)
-  ========================= */
-  const canPlay = () => true;
-
-  /* =========================
-     RENDER
-  ========================= */
         setRoundIndex(prev => prev + 1);
         setAngle(0);
         setParabolaAngle(0);
@@ -510,92 +288,103 @@ export default function GameM() {
     }, 1500);
   }
 
-  if (showRules)  return <RulesModalMath onClose={() => setShowRules(false)} />;
-  if (gameOver)   return <FinalResult score={score} onRestart={() => { setGameOver(false); startGame(); }} />;
+  /* =========================
+     LÓGICA DEL MANDO 🕹️
+  ========================= */
+  useMando({
+    onUp: () => setFocoMando(prev => Math.max(0, prev - 1)),
+    onDown: () => {
+      const maxIndex = graphMode === "circle" ? 2 : 5;
+      setFocoMando(prev => Math.min(maxIndex, prev + 1));
+    },
+    onButton2: () => {
+      if (gameOver) {
+        if (focoMando === 0) { setGameOver(false); startGame(); }
+        else navigate("/menu");
+      } else if (showRules) {
+        setShowRules(false);
+      } else {
+        if (focoMando === 0) navigate("/menu");
+        else if (focoMando === 1) toggleGraphMode();
+        else if (graphMode === "circle") {
+          if (focoMando === 2) validate();
+        } else {
+          if (focoMando === 2) graphMode === "linear" ? rotate(45) : rotateParabola(45);
+          else if (focoMando === 3) graphMode === "linear" ? rotate(90) : rotateParabola(90);
+          else if (focoMando === 4) graphMode === "linear" ? rotate(180) : rotateParabola(180);
+          else if (focoMando === 5) validate();
+        }
+      }
+    },
+    onButton1: () => {
+      if (showRules) navigate("/menu");
+    }
+  });
+
+  const getFocusStyle = (index) => {
+    return focoMando === index 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s", zIndex: 10 } 
+      : { transition: "all 0.2s" };
+  };
+
+  /* ── RESULTADO FINAL ── */
+  function renderFinalResult() {
+    const stars = getStars(score);
+    const msgs  = ["Sin aciertos, ¡sigue intentando!", "Sigue practicando", "Casi lo logras", "¡Buen trabajo!", "¡Muy bien!", "¡Perfecto!"];
+    return (
+      <div className="final-result">
+        <div className="final-result__inner">
+          <h2 className="final-result__title">Resultado Final</h2>
+          <div className="final-result__stars">
+            {[1,2,3,4,5].map(s => (
+              <span key={s} className={`star ${s <= stars ? "star--active" : ""}`}>★</span>
+            ))}
+          </div>
+          <div className="final-result__score">{score * 20}<span>/100</span></div>
+          <div className="final-result__msg">{msgs[stars]}</div>
+          <div className="final-result__detail">{score} de 5 respuestas correctas</div>
+          <button 
+            className="final-result__btn" 
+            onClick={() => { setGameOver(false); startGame(); }}
+            style={getFocusStyle(0)}
+          >
+            Jugar otra vez
+          </button>
+          <button 
+            className="final-result__menu" 
+            onClick={() => navigate("/menu")}
+            style={{marginTop: "10px", ...getFocusStyle(1)}}
+          >
+            Regresar al menu
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRules) return <RulesModalMath onClose={() => setShowRules(false)} />;
+  if (gameOver) return renderFinalResult();
   if (!challenge) return <div className="game-loading">Cargando...</div>;
 
   return (
-    <div className="game-container">
-
-      <GameHUD
-        deckCount={game.deck.length}
-        lives={game.lives}
-        questionsAvailable={game.questionsLeft}
-        currentPlayer={game.currentPlayer}
-        lastAction={game.lastAction}
-      />
-
-      {/* ♻️ PANEL DE INFO: CARTA ACTUAL */}
-      {game.topCard && (
-        <div style={{
-          position: 'absolute', top: '90px', right: '20px', width: '240px',
-          background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '16px',
-          padding: '20px', color: '#ffffff', zIndex: 100,
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.15)'
-        }}>
-          <h4 style={{ margin: '0 0 15px 0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#93c5fd', borderBottom: '1px solid rgba(59, 130, 246, 0.3)', paddingBottom: '8px', fontWeight: '700' }}>🔢 Carta en Juego</h4>
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>🎨 COLOR</div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '800', textTransform: 'uppercase', color: getColorStyle(game.topCard.color), textShadow: `0 0 10px ${getColorStyle(game.topCard.color)}66` }}>{game.topCard.color || 'Comodín'}</div>
-          </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px', fontWeight: '600' }}>VALOR / OPERACIÓN</div>
-            {/* Usa .value o .number dependiendo de cómo venga tu API de mate */}
-            <div style={{ fontSize: '1.5rem', fontWeight: '900', lineHeight: '1.3', color: '#ffffff', fontFamily: "'Archivo Black', sans-serif" }}>{game.topCard.value || game.topCard.number || "🎲"}</div>
-          </div>
-        </div>
-      )}
-
-      <OpponentHandM hand={game.opponentHand} />
-
-      <div className="center-area">
-        <div className="center-card">
-          {game.topCard && <CardM card={game.topCard} />}
     <div className="game-container gamem-new">
-
-
-      {/* 🔙 REGRESAR AL MENÚ */}
       <button
         className="back-btn"
         onClick={() => navigate('/menu')}
+        style={getFocusStyle(0)}
       >
         Regresar al menú
       </button>
 
       <div className="gamem-layout">
 
-        {/* ── COL 1: CARTA ── */}
         <ChallengeCard challenge={challenge} index={roundIndex} total={totalRounds} />
 
-        {/* ── COL 2: GRÁFICA ── */}
         <div className="gamem-center">
           <InteractiveGraph angle={angle} graphMode={graphMode} parabolaAngle={parabolaAngle} />
         </div>
 
-        <div className="controls">
-          {/* 🕹️ Controles Centrales con Joystick */}
-          <button 
-            className="draw-btn" 
-            onClick={() => { playSound(); handleDrawCard(); }}
-            style={getFocusStyle(focusZone === "actions" && focusIndex === 0)}
-          >
-            Robar
-          </button>
-
-          <button 
-            className="question-btn" 
-            onClick={() => { playSound(); handleOpenQuestion(); }}
-            style={getFocusStyle(focusZone === "actions" && focusIndex === 1)}
-          >
-            Pregunta ({game.questionsLeft})
-          </button>
-        </div>
-      </div>
-        {/* ── COL 3: PANEL DERECHO (stats + controles + validar) ── */}
         <div className="gamem-right">
-
-          {/* Stats */}
           <div className="gamem-stats">
             <div className="stats-box">
               <span className="stats-box__icon">🏆</span>
@@ -608,76 +397,25 @@ export default function GameM() {
             </div>
           </div>
 
-      {/* 🕹️ Pasamos el focusedIndex */}
-      <PlayerHandM
-        hand={game.playerHand}
-        topCard={game.topCard}
-        onPlay={(card) => { playSound(); handlePlayCard(card); }}
-        canPlay={canPlay}
-        currentPlayer={game.currentPlayer}
-        focusedIndex={focusZone === "hand" ? focusIndex : -1} 
-      />
-
-      {/* =========================
-         MODAL PREGUNTA
-      ========================= */}
-      {selectedQuestion && (
-        <div className="modal" style={{ zIndex: 1000 }}>
-          <div className="modal-content">
-
-            <h3>❓ {selectedQuestion.question}</h3>
-
-            {selectedQuestion.options.map((opt, idx) => {
-              let className = "";
-
-              if (userAnswer !== null) {
-                if (idx === selectedQuestion.correct) {
-                  className = "correct";
-                } else if (idx === userAnswer) {
-                  className = "incorrect";
-                }
-              }
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => { playSound(); handleSubmitAnswer(idx); }}
-                  disabled={userAnswer !== null}
-                  className={className}
-                  style={{ ...getFocusStyle(focusZone === "question" && focusIndex === idx && userAnswer === null), padding: "10px", margin: "5px" }}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-
-            {userAnswer !== null && (
-              <p>{selectedQuestion.explanation}</p>
-            )}
-
-          </div>
-        </div>
-      )}
           <span className="move-graph">MODIFICA LA GRÁFICA</span>
 
-          {/* Cambiar tipo */}
           <button
             className={`graph-mode-btn ${graphMode !== "linear" ? "graph-mode-btn--active" : ""}`}
             onClick={toggleGraphMode}
+            style={getFocusStyle(1)}
           >
             {graphMode === "linear"    ? "📈 Lineal"     :
              graphMode === "quadratic" ? "📉 Cuadrática" : "⭕ Círculo"}
             <span className="graph-mode-btn__hint">Cambiar tipo</span>
           </button>
 
-          {/* Controles de rotación */}
           {graphMode === "linear" && (
             <div className="rotation-controls">
               <span className="rotation-label">CONTROLES DE ROTACIÓN</span>
               <div className="rotation-btns">
-                <button className="rot-btn" onClick={() => rotate(45)}>↻ 45°</button>
-                <button className="rot-btn" onClick={() => rotate(90)}>↻ 90°</button>
-                <button className="rot-btn" onClick={() => rotate(180)}>↻ 180°</button>
+                <button className="rot-btn" onClick={() => rotate(45)} style={getFocusStyle(2)}>↻ 45°</button>
+                <button className="rot-btn" onClick={() => rotate(90)} style={getFocusStyle(3)}>↻ 90°</button>
+                <button className="rot-btn" onClick={() => rotate(180)} style={getFocusStyle(4)}>↻ 180°</button>
               </div>
             </div>
           )}
@@ -686,25 +424,24 @@ export default function GameM() {
             <div className="rotation-controls">
               <span className="rotation-label">ROTAR PARÁBOLA</span>
               <div className="rotation-btns">
-                <button className="rot-btn" onClick={() => rotateParabola(45)}>↻ 45°</button>
-                <button className="rot-btn" onClick={() => rotateParabola(90)}>↻ 90°</button>
-                <button className="rot-btn" onClick={() => rotateParabola(180)}>↻ 180°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(45)} style={getFocusStyle(2)}>↻ 45°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(90)} style={getFocusStyle(3)}>↻ 90°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(180)} style={getFocusStyle(4)}>↻ 180°</button>
               </div>
             </div>
           )}
 
-          {/* Feedback */}
           {feedback && (
             <div className={`feedback-banner feedback-banner--${feedback}`}>
               {feedback === "correct" ? "✅ ¡Correcto!" : "❌ Incorrecto"}
             </div>
           )}
 
-          {/* Validar */}
           <button
             className={`validate-btn ${validated ? "validate-btn--done" : ""}`}
             onClick={validate}
             disabled={validated}
+            style={getFocusStyle(graphMode === "circle" ? 2 : 5)}
           >
             ✓ VALIDAR
           </button>

@@ -1,18 +1,88 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "../css/RulesModal.css";
 
-export default function RulesModalRec({ onClose }) {
+// 🔊 SONIDO (Añadido para mantener la consistencia al jugar con el mando)
+const soundButton = new Audio("/sounds/boton.mp3");
+const playSound = () => {
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+  try { soundButton.currentTime = 0; soundButton.play(); } catch (e) {}
+};
+
+export default function RulesModalRec({ onClose, focusedIndex }) {
   const [page, setPage] = useState(0);
+  
+  // 🕹️ Referencia para poder mover el scroll de la ventana con el joystick
+  const modalRef = useRef(null);
 
   const titles = ["Reglas del juego", "Cartas comodín"];
 
+  // 🕹️ ESCUCHADOR DE EVENTOS DEL MANDO INALÁMBRICO
+  useEffect(() => {
+    // Función para deslizar arriba/abajo
+    const handleScroll = (e) => {
+      if (modalRef.current) {
+        const scrollAmount = 80; // Píxeles que baja o sube por cada toque
+        if (e.detail === 'down') {
+          modalRef.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        } else if (e.detail === 'up') {
+          modalRef.current.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        }
+      }
+    };
+
+    // Funciones para cambiar de página
+    const handlePrev = () => {
+      setPage(p => Math.max(0, p - 1));
+    };
+
+    const handleNext = () => {
+      setPage(p => {
+        if (p === 1) { onClose(); return p; }
+        return p + 1;
+      });
+    };
+
+    // Preparamos los oídos del navegador
+    window.addEventListener('modal-scroll', handleScroll);
+    window.addEventListener('modal-prev', handlePrev);
+    window.addEventListener('modal-next', handleNext);
+
+    // Limpiamos los oídos cuando se cierra el modal
+    return () => {
+      window.removeEventListener('modal-scroll', handleScroll);
+      window.removeEventListener('modal-prev', handlePrev);
+      window.removeEventListener('modal-next', handleNext);
+    };
+  }, [onClose]);
+
+  // 🕹️ Estilo visual para saber qué botón está enfocando el joystick
+  const getFocusStyle = (index) => {
+    return focusedIndex === index 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s", zIndex: 10 } 
+      : { transition: "all 0.2s" };
+  };
+
   return (
     <div className="rules-overlay">
-      <div className="rules-modal">
+      {/* 🕹️ Le agregamos el ref y aseguramos que tenga scroll vertical */}
+      <div 
+        className="rules-modal" 
+        ref={modalRef} 
+        style={{ overflowY: 'auto', maxHeight: '90vh', scrollBehavior: 'smooth' }}
+      >
 
         <div className="rules-header">
           <span className="rules-page-label">Página {page + 1} de 2</span>
-          <button className="rules-close" onClick={onClose}>Cerrar</button>
+          
+          {/* 🕹️ Foco 0: Botón Cerrar */}
+          <button 
+            className="rules-close" 
+            onClick={() => { playSound(); onClose(); }}
+            style={getFocusStyle(0)}
+          >
+            Cerrar
+          </button>
         </div>
 
         <h2 className="rules-title">{titles[page]}</h2>
@@ -102,20 +172,26 @@ export default function RulesModalRec({ onClose }) {
         )}
 
         <div className="rules-nav">
+          {/* 🕹️ Foco 1: Botón Anterior */}
           <button
             className="rules-btn"
-            onClick={() => setPage(p => p - 1)}
+            onClick={() => { playSound(); setPage(p => p - 1); }}
             disabled={page === 0}
+            style={getFocusStyle(1)}
           >
             ← Anterior
           </button>
+          
           <div className="rules-dots">
             <span className={`rules-dot ${page === 0 ? "active" : ""}`} />
             <span className={`rules-dot ${page === 1 ? "active" : ""}`} />
           </div>
+          
+          {/* 🕹️ Foco 2: Botón Siguiente / Entendido */}
           <button
             className="rules-btn primary"
-            onClick={() => page === 1 ? onClose() : setPage(p => p + 1)}
+            onClick={() => { playSound(); page === 1 ? onClose() : setPage(p => p + 1); }}
+            style={getFocusStyle(2)}
           >
             {page === 1 ? "¡Entendido!" : "Siguiente →"}
           </button>

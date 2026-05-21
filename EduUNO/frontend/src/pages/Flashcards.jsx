@@ -4,7 +4,6 @@ import { flashcardsData } from "../data/flashcardsData";
 import { flashcardsDataMath } from "../data/flashcardsDataMath";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
-import { useMando } from "../hooks/useMando"; // 🕹️ Importamos el mando
 
 // 🔊 SONIDOS
 const soundFlip = new Audio("/sounds/flash.mp3");
@@ -27,10 +26,6 @@ export default function Flashcards() {
   // 🕹️ Estado para saber si el jugador seleccionó un botón especial con Arriba/Abajo
   // Puede ser: "none" (por defecto), "menu", o "quiz"
   const [focoEspecial, setFocoEspecial] = useState("none"); 
-  
-  // 🕹️ Estado para saber si el jugador seleccionó un botón especial con Arriba/Abajo
-  // Puede ser: "none" (por defecto), "menu", o "quiz"
-  const [focoEspecial, setFocoEspecial] = useState("none"); 
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +34,6 @@ export default function Flashcards() {
   const theme = location.state?.theme || "recycling";
 
   /* ===== DATA ===== */
-  const data = theme === "math" ? flashcardsDataMath : flashcardsData;
   const data = theme === "math" ? flashcardsDataMath : flashcardsData;
   const card = data[currentIndex];
 
@@ -114,8 +108,7 @@ export default function Flashcards() {
       playSound(soundButton);
       setCurrentIndex(currentIndex + 1);
       setFlipped(false);
-      setFocoEspecial("none"); // Reseteamos el foco al cambiar de carta
-      setFocoEspecial("none"); // Reseteamos el foco al cambiar de carta
+      setFocoEspecial("none"); 
     }
   };
 
@@ -124,8 +117,7 @@ export default function Flashcards() {
       playSound(soundButton);
       setCurrentIndex(currentIndex - 1);
       setFlipped(false);
-      setFocoEspecial("none"); // Reseteamos el foco al regresar
-      setFocoEspecial("none"); // Reseteamos el foco al regresar
+      setFocoEspecial("none"); 
     }
   };
 
@@ -137,28 +129,22 @@ export default function Flashcards() {
 
   /* ===== LÓGICA DEL MANDO 🕹️ ===== */
   useMando({
-    // Izquierda o Derecha voltean la carta y devuelven el foco al centro
     onLeft: () => {
-      playSound(soundFlip); // Agregamos el sonido al mando
+      playSound(soundFlip); 
       setFlipped((prev) => !prev);
       setFocoEspecial("none");
     },
     onRight: () => {
-      playSound(soundFlip); // Agregamos el sonido al mando
+      playSound(soundFlip); 
       setFlipped((prev) => !prev);
       setFocoEspecial("none");
     },
-    // Arriba selecciona el botón de Volver al menú
     onUp: () => setFocoEspecial("menu"),
-    
-    // Abajo selecciona el botón de Quiz (solo si estamos en la última carta)
     onDown: () => {
       if (currentIndex === data.length - 1) {
         setFocoEspecial("quiz");
       }
     },
-    
-    // Botón 2: Acción de confirmar (Depende de qué esté enfocado)
     onButton2: () => {
       if (focoEspecial === "menu") {
         playSound(soundButton);
@@ -166,50 +152,9 @@ export default function Flashcards() {
       } else if (focoEspecial === "quiz" && currentIndex === data.length - 1) {
         goQuiz();
       } else {
-        nextCard(); // Acción por defecto si no hay nada más enfocado
+        nextCard(); 
       }
     },
-    
-    // Botón 1: Acción de regresar
-    onButton1: () => prevCard()
-  });
-
-  /* ===== LÓGICA DEL MANDO 🕹️ ===== */
-  useMando({
-    // Izquierda o Derecha voltean la carta y devuelven el foco al centro
-    onLeft: () => {
-      playSound(soundFlip); // Agregamos el sonido al mando
-      setFlipped((prev) => !prev);
-      setFocoEspecial("none");
-    },
-    onRight: () => {
-      playSound(soundFlip); // Agregamos el sonido al mando
-      setFlipped((prev) => !prev);
-      setFocoEspecial("none");
-    },
-    // Arriba selecciona el botón de Volver al menú
-    onUp: () => setFocoEspecial("menu"),
-    
-    // Abajo selecciona el botón de Quiz (solo si estamos en la última carta)
-    onDown: () => {
-      if (currentIndex === data.length - 1) {
-        setFocoEspecial("quiz");
-      }
-    },
-    
-    // Botón 2: Acción de confirmar (Depende de qué esté enfocado)
-    onButton2: () => {
-      if (focoEspecial === "menu") {
-        playSound(soundButton);
-        navigate("/menu");
-      } else if (focoEspecial === "quiz" && currentIndex === data.length - 1) {
-        goQuiz();
-      } else {
-        nextCard(); // Acción por defecto si no hay nada más enfocado
-      }
-    },
-    
-    // Botón 1: Acción de regresar
     onButton1: () => prevCard()
   });
 
@@ -222,24 +167,16 @@ export default function Flashcards() {
   }, [currentIndex]);
 
   // Función para dar estilo visual al elemento enfocado por el mando
-const getFocusStyle = (target) => {
-  const outlineColor = theme === "math" ? "#ff4d4d" : "#4ade80";
-  return focoEspecial === target 
-    ? { outline: `4px solid ${outlineColor}`, transform: "scale(1.05)", transition: "all 0.2s" } 
-    : { transition: "all 0.2s" };
-};
-
-  // Función para dar estilo visual al elemento enfocado por el mando
   const getFocusStyle = (target) => {
+    const outlineColor = theme === "math" ? "#ff4d4d" : "#4ade80";
     return focoEspecial === target 
-      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s" } 
+      ? { outline: `4px solid ${outlineColor}`, transform: "scale(1.05)", transition: "all 0.2s" } 
       : { transition: "all 0.2s" };
   };
 
   return (
     <div className={`container ${theme}`}>
 
-      {/* HEADER */}
       <header className="header">
         <h1 className="header-title">
           {theme === "math"
@@ -253,11 +190,9 @@ const getFocusStyle = (target) => {
 
         <span className="instruction">
           (Mueve izquierda/derecha para voltear)
-          (Mueve izquierda/derecha para voltear)
         </span>
       </header>
 
-      {/* MAIN */}
       <main className="main-content">
         <div
           className="flashcard-container"
@@ -273,7 +208,6 @@ const getFocusStyle = (target) => {
 
               <p className="card-definition">{card.definition}</p>
 
-              {/* GRAFICA EN FRONT */}
               {card.graph && (
                 <canvas
                   id={`graph-${currentIndex}`}
@@ -319,19 +253,14 @@ const getFocusStyle = (target) => {
           &lt; Anterior
         </button>
 
-        {/* 🕹️ Le damos el foco visual de "Siguiente" cuando nada especial está enfocado */}
-        {/* 🕹️ Le damos el foco visual de "Siguiente" cuando nada especial está enfocado */}
         <button
           onClick={nextCard}
           disabled={currentIndex === data.length - 1}
-          style={focoEspecial === "none" && currentIndex !== data.length - 1 ? getFocusStyle("none") : {}}
           style={focoEspecial === "none" && currentIndex !== data.length - 1 ? getFocusStyle("none") : {}}
         >
           Siguiente &gt;
         </button>
 
-        {/* 🕹️ Foco visual para Volver al menú */}
-        {/* 🕹️ Foco visual para Volver al menú */}
         <button
           className="back-menu-btn"
           onClick={() => {
@@ -339,19 +268,16 @@ const getFocusStyle = (target) => {
             navigate("/menu");
           }}
           style={getFocusStyle("menu")}
-          style={getFocusStyle("menu")}
         >
           &larr; Volver al menú
         </button>
       </div>
 
-      {/* QUIZ */}
       {currentIndex === data.length - 1 && (
         <div className="quiz-start-container">
           <button
             className="quiz-start-btn"
             onClick={goQuiz}
-            style={getFocusStyle("quiz")}
             style={getFocusStyle("quiz")}
           >
             Iniciar cuestionario →
