@@ -201,9 +201,30 @@ function InteractiveGraph({ angle, graphMode, parabolaAngle }) {
   );
 }
 
-/* ── COMPONENTE PRINCIPAL ── */
-export default function GameM() {
+/* ── RESULTADO FINAL ── */
+function FinalResult({ score, onRestart }) {
+  const stars = getStars(score);
+  const msgs  = ["Sin aciertos, ¡sigue intentando!", "Sigue practicando", "Casi lo logras", "¡Buen trabajo!", "¡Muy bien!", "¡Perfecto!"];
+  useEffect(() => { playSound(score >= 3 ? soundWin : soundLose); }, [score]);
+  
+  return (
+    <div className="final-result">
+      <div className="final-result__inner">
+        <h2 className="final-result__title">Resultado Final</h2>
+        <div className="final-result__stars">
+          {[1,2,3,4,5].map(s => (
+            <span key={s} className={`star ${s <= stars ? "star--active" : ""}`}>★</span>
+          ))}
+        </div>
+        <div className="final-result__score">{score * 20}<span>/100</span></div>
+        <div className="final-result__msg">{msgs[stars]}</div>
+        <div className="final-result__detail">{score} de 5 respuestas correctas</div>
+      </div>
+    </div>
+  );
+}
 
+export default function GameM() {
   const navigate = useNavigate(); 
 
   const [showRules,     setShowRules]     = useState(true);
@@ -216,9 +237,19 @@ export default function GameM() {
   const [feedback,      setFeedback]      = useState(null);
   const [gameOver,      setGameOver]      = useState(false);
   const [validated,     setValidated]     = useState(false);
+  
+  // 🔥 ESTADO PROTECTOR: Evita los clics fantasma del menú al cargar la página
+  const [canClick, setCanClick] = useState(false);
 
-  // 🕹️ Foco de Mando para este juego
-  const [focoMando, setFocoMando] = useState(0);
+  // 🕹️ CURSOR VIRTUAL DEL MANDO ARCADE
+  const [focusZone, setFocusZone] = useState("changeType");
+  const [focusIndex, setFocusIndex] = useState(0);
+
+  // 🔥 Bloqueamos las acciones del botón 2 durante medio segundo para proteger el modal de reglas
+  useEffect(() => {
+    const timer = setTimeout(() => setCanClick(true), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => { if (!showRules) startGame(); }, [showRules]);
 
@@ -232,7 +263,8 @@ export default function GameM() {
     setFeedback(null);
     setGameOver(false);
     setValidated(false);
-    setFocoMando(1); // Foco en cambiar modo al iniciar
+    setFocusZone("changeType");
+    setFocusIndex(0);
   }
 
   const challenge   = challenges[roundIndex];
@@ -284,100 +316,113 @@ export default function GameM() {
         setGraphMode("linear");
         setFeedback(null);
         setValidated(false);
+        setFocusZone("changeType");
+        setFocusIndex(0);
       }
     }, 1500);
   }
 
+  useEffect(() => {
+    if (showRules) { setFocusZone("rules"); setFocusIndex(2); }
+    else if (gameOver) { setFocusZone("gameOver"); setFocusIndex(0); }
+    else { setFocusZone("changeType"); setFocusIndex(0); }
+  }, [showRules, gameOver]);
+
   /* =========================
-     LÓGICA DEL MANDO 🕹️
-  ========================= */
+     LÓGICA DEL MANDO 🕹  ========================= */
   useMando({
-    onUp: () => setFocoMando(prev => Math.max(0, prev - 1)),
-    onDown: () => {
-      const maxIndex = graphMode === "circle" ? 2 : 5;
-      setFocoMando(prev => Math.min(maxIndex, prev + 1));
-    },
-    onButton2: () => {
-      if (gameOver) {
-        if (focoMando === 0) { setGameOver(false); startGame(); }
-        else navigate("/menu");
-      } else if (showRules) {
-        setShowRules(false);
-      } else {
-        if (focoMando === 0) navigate("/menu");
-        else if (focoMando === 1) toggleGraphMode();
-        else if (graphMode === "circle") {
-          if (focoMando === 2) validate();
-        } else {
-          if (focoMando === 2) graphMode === "linear" ? rotate(45) : rotateParabola(45);
-          else if (focoMando === 3) graphMode === "linear" ? rotate(90) : rotateParabola(90);
-          else if (focoMando === 4) graphMode === "linear" ? rotate(180) : rotateParabola(180);
-          else if (focoMando === 5) validate();
-        }
+    onUp: () => {
+      if (focusZone === "rules") {
+        setFocusIndex(0);
+        window.dispatchEvent(new CustomEvent('modal-scroll', { detail: 'up' }));
+      }
+      else if (focusZone === "changeType") setFocusZone("backMenu");
+      else if (focusZone === "rotation") { setFocusZone("changeType"); setFocusIndex(0); }
+      else if (focusZone === "validate") {
+        if (graphMode !== "circle") { setFocusZone("rotation"); setFocusIndex(1); }
+        else { setFocusZone("changeType"); setFocusIndex(0); }
       }
     },
-    onButton1: () => {
-      if (showRules) navigate("/menu");
+    onDown: () => {
+      if (focusZone === "rules") {
+        window.dispatchEvent(new CustomEvent('modal-scroll', { detail: 'down' }));
+      }
+      else if (focusZone === "backMenu") { setFocusZone("changeType"); setFocusIndex(0); }
+      else if (focusZone === "changeType") {
+        if (graphMode !== "circle") { setFocusZone("rotation"); setFocusIndex(1); }
+        else { setFocusZone("validate"); setFocusIndex(0); }
+      }
+      else if (focusZone === "rotation") { setFocusZone("validate"); setFocusIndex(0); }
+    },
+    onLeft: () => {
+      if (focusZone === "rules") setFocusIndex(1);
+      else if (focusZone === "rotation") setFocusIndex(prev => Math.max(0, prev - 1));
+      else if (focusZone === "gameOver") setFocusIndex(0);
+    },
+    onRight: () => {
+      if (focusZone === "rules") setFocusIndex(2);
+      else if (focusZone === "rotation") setFocusIndex(prev => Math.min(2, prev + 1));
+      else if (focusZone === "gameOver") setFocusIndex(1);
+    },
+    onButton2: () => { // Confirmar
+      if (!canClick) return; // 🔥 Evita clics arrastrados del menú
+      
+      playSound();
+      if (focusZone === "rules") {
+        if (focusIndex === 0) setShowRules(false);
+        else if (focusIndex === 1) window.dispatchEvent(new Event('modal-prev'));
+        else if (focusIndex === 2) window.dispatchEvent(new Event('modal-next'));
+      }
+      else if (focusZone === "backMenu") {
+        navigate("/menu");
+      }
+      else if (focusZone === "changeType") {
+        toggleGraphMode();
+      }
+      else if (focusZone === "rotation") {
+        const angles = [45, 90, 180];
+        if (graphMode === "linear") rotate(angles[focusIndex]);
+        else if (graphMode === "quadratic") rotateParabola(angles[focusIndex]);
+      }
+      else if (focusZone === "validate") {
+        validate();
+      }
+      else if (focusZone === "gameOver") {
+        if (focusIndex === 0) { setGameOver(false); startGame(); }
+        else navigate("/menu");
+      }
+    },
+    onButton1: () => { // Regresar
+      if (focusZone === "rotation" || focusZone === "validate" || focusZone === "backMenu") {
+        setFocusZone("changeType");
+      }
     }
   });
 
-  const getFocusStyle = (index) => {
-    return focoMando === index 
-      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s", zIndex: 10 } 
+  // 🔥 Se ajustó para ignorar el índice si no se le pasa uno específico (Ej: Validar o Regresar)
+  const getFocusStyle = (zone, index) => {
+    const isActive = focusZone === zone && (index === undefined || focusIndex === index);
+    return isActive 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s", zIndex: 10, boxShadow: "0 0 20px rgba(74, 222, 128, 0.6)" } 
       : { transition: "all 0.2s" };
   };
 
-  /* ── RESULTADO FINAL ── */
-  function renderFinalResult() {
-    const stars = getStars(score);
-    const msgs  = ["Sin aciertos, ¡sigue intentando!", "Sigue practicando", "Casi lo logras", "¡Buen trabajo!", "¡Muy bien!", "¡Perfecto!"];
-    return (
-      <div className="final-result">
-        <div className="final-result__inner">
-          <h2 className="final-result__title">Resultado Final</h2>
-          <div className="final-result__stars">
-            {[1,2,3,4,5].map(s => (
-              <span key={s} className={`star ${s <= stars ? "star--active" : ""}`}>★</span>
-            ))}
-          </div>
-          <div className="final-result__score">{score * 20}<span>/100</span></div>
-          <div className="final-result__msg">{msgs[stars]}</div>
-          <div className="final-result__detail">{score} de 5 respuestas correctas</div>
-          <button 
-            className="final-result__btn" 
-            onClick={() => { setGameOver(false); startGame(); }}
-            style={getFocusStyle(0)}
-          >
-            Jugar otra vez
-          </button>
-          <button 
-            className="final-result__menu" 
-            onClick={() => navigate("/menu")}
-            style={{marginTop: "10px", ...getFocusStyle(1)}}
-          >
-            Regresar al menu
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (showRules) return <RulesModalMath onClose={() => setShowRules(false)} />;
-  if (gameOver) return renderFinalResult();
+  if (showRules) return <RulesModalMath onClose={() => setShowRules(false)} focusedIndex={focusZone === "rules" ? focusIndex : -1} />;
   if (!challenge) return <div className="game-loading">Cargando...</div>;
 
   return (
     <div className="game-container gamem-new">
+      
+      {/* 🔙 REGRESAR AL MENÚ (Sin el position absolute para que no se estire) */}
       <button
         className="back-btn"
-        onClick={() => navigate('/menu')}
-        style={getFocusStyle(0)}
+        onClick={() => { playSound(); navigate('/menu'); }}
+        style={getFocusStyle("backMenu")}
       >
         Regresar al menú
       </button>
 
       <div className="gamem-layout">
-
         <ChallengeCard challenge={challenge} index={roundIndex} total={totalRounds} />
 
         <div className="gamem-center">
@@ -399,23 +444,25 @@ export default function GameM() {
 
           <span className="move-graph">MODIFICA LA GRÁFICA</span>
 
+          {/* Cambiar Tipo de Gráfica */}
           <button
             className={`graph-mode-btn ${graphMode !== "linear" ? "graph-mode-btn--active" : ""}`}
             onClick={toggleGraphMode}
-            style={getFocusStyle(1)}
+            style={getFocusStyle("changeType")}
           >
             {graphMode === "linear"    ? "📈 Lineal"     :
              graphMode === "quadratic" ? "📉 Cuadrática" : "⭕ Círculo"}
             <span className="graph-mode-btn__hint">Cambiar tipo</span>
           </button>
 
+          {/* Controles de Ángulos: Desplazamiento lateral con Joystick */}
           {graphMode === "linear" && (
             <div className="rotation-controls">
               <span className="rotation-label">CONTROLES DE ROTACIÓN</span>
               <div className="rotation-btns">
-                <button className="rot-btn" onClick={() => rotate(45)} style={getFocusStyle(2)}>↻ 45°</button>
-                <button className="rot-btn" onClick={() => rotate(90)} style={getFocusStyle(3)}>↻ 90°</button>
-                <button className="rot-btn" onClick={() => rotate(180)} style={getFocusStyle(4)}>↻ 180°</button>
+                <button className="rot-btn" onClick={() => rotate(45)} style={getFocusStyle("rotation", 0)}>↻ 45°</button>
+                <button className="rot-btn" onClick={() => rotate(90)} style={getFocusStyle("rotation", 1)}>↻ 90°</button>
+                <button className="rot-btn" onClick={() => rotate(180)} style={getFocusStyle("rotation", 2)}>↻ 180°</button>
               </div>
             </div>
           )}
@@ -424,9 +471,9 @@ export default function GameM() {
             <div className="rotation-controls">
               <span className="rotation-label">ROTAR PARÁBOLA</span>
               <div className="rotation-btns">
-                <button className="rot-btn" onClick={() => rotateParabola(45)} style={getFocusStyle(2)}>↻ 45°</button>
-                <button className="rot-btn" onClick={() => rotateParabola(90)} style={getFocusStyle(3)}>↻ 90°</button>
-                <button className="rot-btn" onClick={() => rotateParabola(180)} style={getFocusStyle(4)}>↻ 180°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(45)} style={getFocusStyle("rotation", 0)}>↻ 45°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(90)} style={getFocusStyle("rotation", 1)}>↻ 90°</button>
+                <button className="rot-btn" onClick={() => rotateParabola(180)} style={getFocusStyle("rotation", 2)}>↻ 180°</button>
               </div>
             </div>
           )}
@@ -437,17 +484,34 @@ export default function GameM() {
             </div>
           )}
 
+          {/* 🔥 Validar ya prende porque ignora el índice guardado de los ángulos */}
           <button
             className={`validate-btn ${validated ? "validate-btn--done" : ""}`}
             onClick={validate}
             disabled={validated}
-            style={getFocusStyle(graphMode === "circle" ? 2 : 5)}
+            style={getFocusStyle("validate")}
           >
             ✓ VALIDAR
           </button>
 
         </div>
       </div>
+
+      {gameOver && (
+        <div className="final-result-overlay" style={{position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000}}>
+          <div style={{textAlign: 'center'}}>
+            <FinalResult score={score} onRestart={() => { setGameOver(false); startGame(); }} />
+            <div style={{display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '20px'}}>
+               <button onClick={() => { setGameOver(false); startGame(); }} style={{padding: '12px 30px', borderRadius: '20px', border: 'none', background: '#4ade80', color: 'black', fontWeight: 'bold', cursor: 'pointer', ...getFocusStyle("gameOver", 0)}}>
+                 🔄 Jugar otra vez
+               </button>
+               <button onClick={() => navigate("/menu")} style={{padding: '12px 30px', borderRadius: '20px', border: '2px solid #22d3ee', background: 'transparent', color: '#22d3ee', fontWeight: 'bold', cursor: 'pointer', ...getFocusStyle("gameOver", 1)}}>
+                 Regresar al menú
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

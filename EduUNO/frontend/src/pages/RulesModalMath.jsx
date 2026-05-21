@@ -1,18 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "../css/RulesModal.css";
 
-export default function RulesModalMath({ onClose }) {
+// 🔊 SONIDO
+const soundButton = new Audio("/sounds/boton.mp3");
+const playSound = () => {
+  const isMuted = localStorage.getItem("mute") === "true";
+  if (isMuted) return;
+  try { soundButton.currentTime = 0; soundButton.play(); } catch (e) {}
+};
+
+export default function RulesModalMath({ onClose, focusedIndex }) {
   const [page, setPage] = useState(0);
+  
+  // 🕹️ Referencia para controlar el scroll del modal
+  const modalRef = useRef(null);
 
   const titles = ["Cómo se juega", "Ejemplo y consejos"];
 
+  // 🕹️ ESCUCHADOR DE EVENTOS DEL MANDO INALÁMBRICO
+  useEffect(() => {
+    const handleScroll = (e) => {
+      if (modalRef.current) {
+        const scrollAmount = 80; // Píxeles de desplazamiento
+        if (e.detail === 'down') {
+          modalRef.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        } else if (e.detail === 'up') {
+          modalRef.current.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        }
+      }
+    };
+
+    const handlePrev = () => {
+      setPage(p => Math.max(0, p - 1));
+    };
+
+    const handleNext = () => {
+      setPage(p => {
+        if (p === 1) { onClose(); return p; }
+        return p + 1;
+      });
+    };
+
+    // Suscribir los eventos del window
+    window.addEventListener('modal-scroll', handleScroll);
+    window.addEventListener('modal-prev', handlePrev);
+    window.addEventListener('modal-next', handleNext);
+
+    // Limpiar al desmontar
+    return () => {
+      window.removeEventListener('modal-scroll', handleScroll);
+      window.removeEventListener('modal-prev', handlePrev);
+      window.removeEventListener('modal-next', handleNext);
+    };
+  }, [onClose]);
+
+  // 🕹️ Estilo visual para los botones enfocados
+  const getFocusStyle = (index) => {
+    return focusedIndex === index 
+      ? { outline: "4px solid #4ade80", transform: "scale(1.05)", transition: "all 0.2s", zIndex: 10 } 
+      : { transition: "all 0.2s" };
+  };
+
   return (
     <div className="rules-overlay">
-      <div className="rules-modal">
+      {/* 🕹️ Aplicamos la referencia y habilitamos el scroll interno */}
+      <div 
+        className="rules-modal"
+        ref={modalRef} 
+        style={{ overflowY: 'auto', maxHeight: '90vh', scrollBehavior: 'smooth' }}
+      >
 
         <div className="rules-header">
           <span className="rules-page-label">Página {page + 1} de 2</span>
-          <button className="rules-close" onClick={onClose}>Cerrar</button>
+          
+          {/* 🕹️ Foco 0: Cerrar */}
+          <button 
+            className="rules-close" 
+            onClick={() => { playSound(); onClose(); }}
+            style={getFocusStyle(0)}
+          >
+            Cerrar
+          </button>
         </div>
 
         <h2 className="rules-title">{titles[page]}</h2>
@@ -82,8 +150,7 @@ export default function RulesModalMath({ onClose }) {
             <div className="rules-box-row">
               <div className="rules-card-img">
                 <img src="/img/cartas_M/reglas1.png" alt="Carta con ecuación" />
-                <span>Ecuación en carta
-</span>
+                <span>Ecuación en carta</span>
               </div>
               <div className="rules-card-img">
                 <img src="/img/cartas_M/reglas2.png" alt="Línea orientada correctamente" />
@@ -123,20 +190,27 @@ export default function RulesModalMath({ onClose }) {
         )}
 
         <div className="rules-nav">
+          
+          {/* 🕹️ Foco 1: Anterior */}
           <button
             className="rules-btn"
-            onClick={() => setPage(p => p - 1)}
+            onClick={() => { playSound(); setPage(p => p - 1); }}
             disabled={page === 0}
+            style={getFocusStyle(1)}
           >
             Anterior
           </button>
+          
           <div className="rules-dots">
             <span className={`rules-dot ${page === 0 ? "active" : ""}`} />
             <span className={`rules-dot ${page === 1 ? "active" : ""}`} />
           </div>
+          
+          {/* 🕹️ Foco 2: Siguiente / Entendido */}
           <button
             className="rules-btn primary"
-            onClick={() => page === 1 ? onClose() : setPage(p => p + 1)}
+            onClick={() => { playSound(); page === 1 ? onClose() : setPage(p => p + 1); }}
+            style={getFocusStyle(2)}
           >
             {page === 1 ? "Entendido" : "Siguiente"}
           </button>
