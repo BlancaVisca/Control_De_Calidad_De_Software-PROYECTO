@@ -23,6 +23,12 @@ export default function Flashcards() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   
+  // 🔥 ESTADO PROTECTOR: Evita los clics fantasma del menú
+  const [canClick, setCanClick] = useState(false);
+  
+  // 🔥 ESTADO DE ANIMACIÓN: Asegura que el auto-volteo ocurra solo 1 vez
+  const [hasAnimated, setHasAnimated] = useState(false);
+
   // 🕹️ Estado para saber si el jugador seleccionó un botón especial con Arriba/Abajo
   // Puede ser: "none" (por defecto), "menu", o "quiz"
   const [focoEspecial, setFocoEspecial] = useState("none"); 
@@ -36,6 +42,12 @@ export default function Flashcards() {
   /* ===== DATA ===== */
   const data = theme === "math" ? flashcardsDataMath : flashcardsData;
   const card = data[currentIndex];
+
+  // 🔥 Bloqueamos las acciones del mando durante 400ms al montar el componente
+  useEffect(() => {
+    const timer = setTimeout(() => setCanClick(true), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   /* ===== GRAFICAS DINAMICAS ===== */
   useEffect(() => {
@@ -146,6 +158,8 @@ export default function Flashcards() {
       }
     },
     onButton2: () => {
+      if (!canClick) return; // 🔥 Filtro anti-fantasmas
+
       if (focoEspecial === "menu") {
         playSound(soundButton);
         navigate("/menu");
@@ -155,16 +169,24 @@ export default function Flashcards() {
         nextCard(); 
       }
     },
-    onButton1: () => prevCard()
+    onButton1: () => {
+      if (!canClick) return;
+      prevCard();
+    }
   });
 
   /* ===== ANIMACION INICIAL ===== */
   useEffect(() => {
-    if (currentIndex === 0) {
-      setTimeout(() => setFlipped(true), 600);
-      setTimeout(() => setFlipped(false), 1800);
+    // 🔥 Ahora solo se voltea si estamos en la primera y NUNCA se ha animado antes
+    if (currentIndex === 0 && !hasAnimated) {
+      setHasAnimated(true);
+      const t1 = setTimeout(() => setFlipped(true), 600);
+      const t2 = setTimeout(() => setFlipped(false), 1800);
+      
+      // Limpieza de temporizadores para evitar bugs si el usuario sale rápido
+      return () => { clearTimeout(t1); clearTimeout(t2); }; 
     }
-  }, [currentIndex]);
+  }, [currentIndex, hasAnimated]);
 
   // Función para dar estilo visual al elemento enfocado por el mando
   const getFocusStyle = (target) => {
@@ -202,23 +224,38 @@ export default function Flashcards() {
           }}
         >
           <div className={`flashcard ${card.id} ${flipped ? "flipped" : ""}`}>
-            {/* FRONT */}
-            <div className="flashcard-front">
-              <h2 className="card-title">{card.title}</h2>
+{/* FRONT */}
+            <div className="flashcard-front" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '15px', height: '100%', boxSizing: 'border-box' }}>
+              
+              {/* 🛠️ ARREGLO 1: Le quitamos el className="card-title" para matar el CSS rebelde */}
+<h2 style={{ 
+                textAlign: 'center', 
+                margin: '0 0 10px 0', 
+                fontSize: '2.5rem', // 🔥 Aumentado de 1.8rem a 2.5rem
+                fontWeight: '900',  // 🔥 Un poco más grueso para que destaque
+                color: '#ffffff',
+                letterSpacing: '1px' // 🔥 Un toque de espacio entre letras para que se vea más limpio
+              }}>
+                {card.title}
+              </h2>
 
-              <p className="card-definition">{card.definition}</p>
+              <p className="card-definition" style={{ textAlign: 'center', maxWidth: '95%', margin: '0 0 10px 0', fontSize: '1rem' }}>
+                {card.definition}
+              </p>
 
+              {/* 🛠️ ARREGLO 2: Reducimos el canvas a 180x180 para que todo quepa sin empujar */}
               {card.graph && (
                 <canvas
                   id={`graph-${currentIndex}`}
-                  width="250"
-                  height="250"
+                  width="180"
+                  height="180"
+                  style={{ display: 'block', margin: '0 0 10px 0' }}
                 ></canvas>
               )}
 
-              <div className="curiosity-box">
-                <h3>Ejemplo</h3>
-                <p>{card.curiosity}</p>
+              <div className="curiosity-box" style={{ maxWidth: '95%', margin: '0', textAlign: 'center', padding: '10px' }}>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem' }}>Ejemplo</h3>
+                <p style={{ margin: 0, fontSize: '0.9rem' }}>{card.curiosity}</p>
               </div>
             </div>
 
